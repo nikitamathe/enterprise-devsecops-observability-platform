@@ -28,17 +28,55 @@ pipeline {
                 '''
             }
         }
+
         stage('Semgrep Scan') {
-             steps {
-                 sh '''
+            steps {
+                sh '''
                     echo "======================================="
                     echo "Running Semgrep SAST Scan..."
                     echo "======================================="
 
                     semgrep scan --config auto .
-                 '''
+                '''
             }
-            
+        }
+
+        stage('Build Artifacts') {
+            steps {
+                sh '''
+                    echo "======================================="
+                    echo "Compiling Java Microservices..."
+                    echo "======================================="
+
+                    services="auth-service account-service transaction-service notification-service api-gateway"
+
+                    for svc in $services; do
+                        echo "Building $svc..."
+                        cd $svc
+                        mvn clean package -DskipTests
+                        cd ..
+                    done
+                '''
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                script {
+                    def scannerHome = tool 'SonarScanner'
+
+                    withSonarQubeEnv('SonarQube') {
+                        sh """
+                            ${scannerHome}/bin/sonar-scanner \
+                                -Dsonar.projectKey=bankapp-devops \
+                                -Dsonar.projectName="Enterprise DevSecOps Observability Platform" \
+                                -Dsonar.sources=. \
+                                -Dsonar.java.binaries=. \
+                                -Dsonar.exclusions="**/node_modules/**,**/semgrep-env/**,**/target/**,**/*.jar,**/*.zip,**/*.tar.gz"
+                        """
+                    }
+                }
+            }
         }
 
         stage('Login to Docker Hub') {
@@ -83,7 +121,7 @@ pipeline {
             }
         }
 
-        stage('Scan Docker Images') {
+        stage('Trivy Scan') {
             steps {
                 withCredentials([
                     usernamePassword(
@@ -131,6 +169,7 @@ pipeline {
             }
         }
     }
+
     post {
         always {
             sh 'docker logout || true'
