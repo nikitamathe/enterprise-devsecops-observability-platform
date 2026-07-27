@@ -110,7 +110,7 @@ PY
                         fi
                     }
 
-                    ensure_image_available python:3.12-alpine
+                    ensure_image_available returntocorp/semgrep:1.171.0-nonroot
 
                     mkdir -p reports
 
@@ -118,8 +118,8 @@ PY
                     docker run --rm \
                       -v "$WORKSPACE:/src" \
                       -w /src \
-                      python:3.12-alpine \
-                      sh -c "pip install --no-cache-dir semgrep && semgrep scan --config auto --json --output reports/semgrep-report.json ." > reports/semgrep-report.log 2>&1
+                      returntocorp/semgrep:1.171.0-nonroot \
+                      semgrep scan --config auto --json --output reports/semgrep-report.json . > reports/semgrep-report.log 2>&1
                     semgrep_exit=$?
                     set -e
 
@@ -344,6 +344,67 @@ PY
                     allowEmptyArchive: true,
                     fingerprint: true
                 )
+            }
+        }
+
+        stage('Publish HTML Reports') {
+            steps {
+                sh '''
+                    python3 - <<'PY'
+from pathlib import Path
+
+reports_dir = Path('reports')
+pages = [
+    ('Gitleaks', 'gitleaks-report.html'),
+    ('Semgrep', 'semgrep-report.html'),
+    ('SonarQube', 'sonarqube-report.html'),
+    ('Grype', 'grype-report.html'),
+]
+
+rows = []
+for name, filename in pages:
+    path = reports_dir / filename
+    if path.exists():
+        rows.append(f"<tr><td>{name}</td><td><a href=\"{filename}\">{filename}</a></td><td>Available</td></tr>")
+    else:
+        rows.append(f"<tr><td>{name}</td><td>{filename}</td><td>Not generated</td></tr>")
+
+html = f"""<!DOCTYPE html>
+<html>
+<head>
+  <meta charset=\"utf-8\">
+  <title>Security Reports</title>
+  <style>
+    body {{ font-family: Arial, sans-serif; margin: 24px; }}
+    table {{ border-collapse: collapse; width: 100%; }}
+    th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
+    th {{ background: #f2f2f2; }}
+    a {{ color: #0b57d0; text-decoration: none; }}
+  </style>
+</head>
+<body>
+  <h1>Security Scan Reports</h1>
+  <p>Open the reports below from the Jenkins HTML report view.</p>
+  <table>
+    <tr><th>Scan</th><th>Report File</th><th>Status</th></tr>
+    {''.join(rows)}
+  </table>
+</body>
+</html>"""
+
+(reports_dir / 'index.html').write_text(html)
+PY
+                '''
+
+                publishHTML(target: [
+                    allowMissing: true,
+                    alwaysLinkToLastBuild: true,
+                    keepAll: true,
+                    reportDir: 'reports',
+                    reportFiles: 'index.html',
+                    reportName: 'Security Reports',
+                    reportTitles: 'Security Reports'
+                ])
             }
         }
 
