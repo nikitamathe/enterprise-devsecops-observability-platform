@@ -206,7 +206,7 @@ PY
                     mkdir -p reports
 
                     set +e
-                    if [ -n "${SONAR_HOST_URL:-}" ]; then
+                    if [ -n "${SONAR_HOST_URL:-}" ] && [ -n "${SONAR_TOKEN:-}" ]; then
                         docker run --rm \
                           -e SONAR_HOST_URL \
                           -e SONAR_TOKEN \
@@ -221,7 +221,7 @@ PY
                           > reports/sonarqube-report.log 2>&1
                         sonar_exit=$?
                     else
-                        echo "SonarQube host URL is not configured. Skipping analysis and generating a placeholder report." > reports/sonarqube-report.log
+                        echo "SonarQube host URL or token is not configured. Skipping analysis and generating a placeholder report." > reports/sonarqube-report.log
                         sonar_exit=0
                     fi
                     set -e
@@ -349,7 +349,7 @@ PY
                                 created_at=\$(docker image inspect "\$image_ref" --format '{{.Created}}')
                                 created_epoch=\$(date -d "\$created_at" +%s 2>/dev/null || echo 0)
                                 now_epoch=\$(date +%s)
-                                age_days=$(( (now_epoch - created_epoch) / 86400 ))
+                                age_days=\$(( (now_epoch - created_epoch) / 86400 ))
 
                                 if [ "\$age_days" -lt ${CACHE_DAYS} ]; then
                                     echo "Using cached build image \$image_ref (age \$age_days days)"
