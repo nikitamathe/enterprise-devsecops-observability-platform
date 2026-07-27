@@ -41,6 +41,12 @@ Thumbs.db
 # Keep Dockerfiles and docker-compose tracked — only ignore runtime artifacts
 .docker/
 
+# ── Reports / local build artifacts ──────────────────────────────────────────
+reports/
+*.report.json
+*.report.html
+*.report.log
+
 # ── Spring Boot / Java ────────────────────────────────────────────────────────
 *.class
 *.jar

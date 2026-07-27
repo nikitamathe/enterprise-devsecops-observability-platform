@@ -24,12 +24,58 @@ pipeline {
                     echo "Running Gitleaks Secret Scan..."
                     echo "======================================="
 
+                    mkdir -p reports
+
+                    set +e
                     docker run --rm \
                       -v "$WORKSPACE:/src" \
                       -w /src \
                       zricethezav/gitleaks:v8.18.2 detect \
                       --source . \
-                      --verbose
+                      --report-format json \
+                      --report-path reports/gitleaks-report.json \
+                      --verbose > reports/gitleaks-report.log 2>&1
+                    gitleaks_exit=$?
+                    set -e
+
+                    echo "gitleaks_exit_code=$gitleaks_exit" > reports/gitleaks-status.txt
+                '''
+
+                sh '''
+                    python3 - <<'PY'
+import json
+from pathlib import Path
+
+reports_dir = Path('reports')
+html_path = reports_dir / 'gitleaks-report.html'
+log_path = reports_dir / 'gitleaks-report.log'
+json_path = reports_dir / 'gitleaks-report.json'
+
+log_text = log_path.read_text(errors='ignore') if log_path.exists() else ''
+findings = []
+if json_path.exists():
+    try:
+        payload = json.loads(json_path.read_text(errors='ignore'))
+        if isinstance(payload, list):
+            findings = payload
+        elif isinstance(payload, dict):
+            findings = payload.get('findings', [])
+    except Exception:
+        findings = []
+
+summary = f"<h2>Gitleaks Scan Report</h2><p>Findings: {len(findings)}</p>"
+if findings:
+    rows = ''.join(
+        f"<tr><td>{index + 1}</td><td>{entry.get('description', 'N/A')}</td><td>{entry.get('file', 'N/A')}</td><td>{entry.get('line', 'N/A')}</td></tr>"
+        for index, entry in enumerate(findings[:20])
+    )
+    summary += f"<table><tr><th>#</th><th>Description</th><th>File</th><th>Line</th></tr>{rows}</table>"
+else:
+    summary += '<p>No secrets detected.</p>'
+
+summary += '<h3>Log</h3><pre>' + '\n'.join(log_text.splitlines()[-40:]) + '</pre>'
+html_path.write_text('<html><body>' + summary + '</body></html>')
+PY
                 '''
             }
         }
@@ -41,12 +87,92 @@ pipeline {
                     echo "Running Semgrep SAST Scan..."
                     echo "======================================="
 
+                    mkdir -p reports
+
+                    set +e
                     docker run --rm \
                       -v "$WORKSPACE:/src" \
                       -w /src \
                       python:3.12-alpine \
-                      sh -c "pip install --no-cache-dir semgrep && semgrep scan --config auto ."
+                      sh -c "pip install --no-cache-dir semgrep && semgrep scan --config auto --json --output reports/semgrep-report.json ." > reports/semgrep-report.log 2>&1
+                    semgrep_exit=$?
+                    set -e
+
+                    echo "semgrep_exit_code=$semgrep_exit" > reports/semgrep-status.txt
                 '''
+
+                sh '''
+                    python3 - <<'PY'
+import json
+from pathlib import Path
+
+reports_dir = Path('reports')
+html_path = reports_dir / 'semgrep-report.html'
+log_path = reports_dir / 'semgrep-report.log'
+json_path = reports_dir / 'semgrep-report.json'
+
+log_text = log_path.read_text(errors='ignore') if log_path.exists() else ''
+findings = []
+if json_path.exists():
+    try:
+        payload = json.loads(json_path.read_text(errors='ignore'))
+        findings = payload.get('results', []) if isinstance(payload, dict) else []
+    except Exception:
+        findings = []
+
+summary = f"<h2>Semgrep Scan Report</h2><p>Findings: {len(findings)}</p>"
+if findings:
+    rows = ''.join(
+        f"<tr><td>{index + 1}</td><td>{item.get('check_id', 'N/A')}</td><td>{item.get('path', 'N/A')}</td></tr>"
+        for index, item in enumerate(findings[:20])
+    )
+    summary += f"<table><tr><th>#</th><th>Check</th><th>Path</th></tr>{rows}</table>"
+else:
+    summary += '<p>No issues detected.</p>'
+
+summary += '<h3>Log</h3><pre>' + '\n'.join(log_text.splitlines()[-40:]) + '</pre>'
+html_path.write_text('<html><body>' + summary + '</body></html>')
+PY
+                '''
+            }
+        }
+
+        stage('Publish Scan Reports') {
+            steps {
+                publishHTML(
+                    target: [
+                        allowMissing: true,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: true,
+                        reportDir: 'reports',
+                        reportFiles: 'gitleaks-report.html',
+                        reportName: 'Gitleaks Report',
+                        reportTitles: 'Gitleaks Scan Report'
+                    ]
+                )
+                publishHTML(
+                    target: [
+                        allowMissing: true,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: true,
+                        reportDir: 'reports',
+                        reportFiles: 'semgrep-report.html',
+                        reportName: 'Semgrep Report',
+                        reportTitles: 'Semgrep Scan Report'
+                    ]
+                )
+                publishHTML(
+                    target: [
+                        allowMissing: true,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: true,
+                        reportDir: 'reports',
+                        reportFiles: 'sonarqube-report.html',
+                        reportName: 'SonarQube Report',
+                        reportTitles: 'SonarQube Scan Report'
+                    ]
+                )
+                archiveArtifacts artifacts: 'reports/*', fingerprint: true
             }
         }
 
@@ -76,15 +202,43 @@ pipeline {
 
                     withSonarQubeEnv('SonarQube') {
                         sh """
+                            mkdir -p reports
+
+                            set +e
                             ${scannerHome}/bin/sonar-scanner \
                               -Dsonar.projectKey=bankapp-devops \
                               -Dsonar.projectName="Enterprise DevSecOps Observability Platform" \
                               -Dsonar.sources=. \
                               -Dsonar.java.binaries=. \
-                              -Dsonar.exclusions=**/node_modules/**,**/target/**,**/*.jar,**/*.zip,**/*.tar.gz
+                              -Dsonar.exclusions=**/node_modules/**,**/target/**,**/*.jar,**/*.zip,**/*.tar.gz \
+                              > reports/sonarqube-report.log 2>&1
+                            sonar_exit=$?
+                            set -e
+
+                            echo "sonarqube_exit_code=$sonar_exit" > reports/sonarqube-status.txt
                         """
                     }
                 }
+
+                sh '''
+                    python3 - <<'PY'
+from pathlib import Path
+
+reports_dir = Path('reports')
+html_path = reports_dir / 'sonarqube-report.html'
+log_path = reports_dir / 'sonarqube-report.log'
+
+log_text = log_path.read_text(errors='ignore') if log_path.exists() else ''
+status = 'completed'
+if 'ANALYSIS SUCCESSFUL' in log_text or 'SUCCESS' in log_text.upper():
+    status = 'successful'
+else:
+    status = 'review required'
+
+summary = f"<h2>SonarQube Scan Report</h2><p>Status: {status}</p><pre>{log_text[-4000:]}</pre>"
+html_path.write_text('<html><body>' + summary + '</body></html>')
+PY
+                '''
             }
         }
 
