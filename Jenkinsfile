@@ -3,6 +3,7 @@ pipeline {
 
     environment {
         IMAGE_TAG = "${env.BUILD_NUMBER}"
+        CACHE_DAYS = '5'
     }
 
     stages {
@@ -23,6 +24,18 @@ pipeline {
                     echo "======================================="
                     echo "Running Gitleaks Secret Scan..."
                     echo "======================================="
+
+                    ensure_image_available() {
+                        local image="$1"
+                        if docker image inspect "$image" >/dev/null 2>&1; then
+                            echo "Using cached image: $image"
+                        else
+                            echo "Pulling missing image: $image"
+                            docker pull "$image"
+                        fi
+                    }
+
+                    ensure_image_available zricethezav/gitleaks:v8.18.2
 
                     mkdir -p reports
 
@@ -87,6 +100,18 @@ PY
                     echo "Running Semgrep SAST Scan..."
                     echo "======================================="
 
+                    ensure_image_available() {
+                        local image="$1"
+                        if docker image inspect "$image" >/dev/null 2>&1; then
+                            echo "Using cached image: $image"
+                        else
+                            echo "Pulling missing image: $image"
+                            docker pull "$image"
+                        fi
+                    }
+
+                    ensure_image_available python:3.12-alpine
+
                     mkdir -p reports
 
                     set +e
@@ -143,6 +168,18 @@ PY
                     echo "======================================="
                     echo "Building Java microservices with Docker Compose..."
                     echo "======================================="
+
+                    ensure_image_available() {
+                        local image="$1"
+                        if docker image inspect "$image" >/dev/null 2>&1; then
+                            echo "Using cached image: $image"
+                        else
+                            echo "Pulling missing image: $image"
+                            docker pull "$image"
+                        fi
+                    }
+
+                    ensure_image_available maven:3.9.9-eclipse-temurin-21
 
                     if ! docker compose version >/dev/null 2>&1; then
                         echo "docker compose is not available on this Jenkins agent"
@@ -223,9 +260,23 @@ PY
                     echo "Running Grype Filesystem Scan..."
                     echo "======================================="
 
-                    docker volume create grype-db || true
+                    ensure_image_available() {
+                        local image="$1"
+                        if docker image inspect "$image" >/dev/null 2>&1; then
+                            echo "Using cached image: $image"
+                        else
+                            echo "Pulling missing image: $image"
+                            docker pull "$image"
+                        fi
+                    }
 
-                    mkdir -p reports
+                    ensure_image_available anchore/grype:latest
+
+                    mkdir -p reports grype-db
+
+                    if [ ! -d grype-db ]; then
+                        mkdir -p grype-db
+                    fi
 
                     if [ ! -f reports/html.tmpl ]; then
                         echo "Missing Grype HTML template at reports/html.tmpl"
@@ -235,7 +286,7 @@ PY
                     docker run --rm \
                       -v "$WORKSPACE:/src" \
                       -v "$WORKSPACE/reports:/reports" \
-                      -v grype-db:/root/.cache/grype/db \
+                      -v "$WORKSPACE/grype-db:/root/.cache/grype/db" \
                       anchore/grype:latest \
                       dir:/src \
                       -o template \
@@ -292,15 +343,29 @@ PY
                         services="auth-service account-service transaction-service notification-service api-gateway frontend"
 
                         for svc in \$services; do
-                            echo "Building \$svc..."
+                            image_ref="\$DOCKERHUB_USER/\$svc:latest"
 
-                            docker build \
+                            if docker image inspect "\$image_ref" >/dev/null 2>&1; then
+                                created_at=\$(docker image inspect "\$image_ref" --format '{{.Created}}')
+                                created_epoch=\$(date -d "\$created_at" +%s 2>/dev/null || echo 0)
+                                now_epoch=\$(date +%s)
+                                age_days=$(( (now_epoch - created_epoch) / 86400 ))
+
+                                if [ "\$age_days" -lt ${CACHE_DAYS} ]; then
+                                    echo "Using cached build image \$image_ref (age \$age_days days)"
+                                    docker tag "\$image_ref" "\$DOCKERHUB_USER/\$svc:${IMAGE_TAG}"
+                                    continue
+                                fi
+                            fi
+
+                            echo "Building \$svc..."
+                            docker build --pull=false \
                               -t \$DOCKERHUB_USER/\$svc:${IMAGE_TAG} \
                               ./\$svc
 
                             docker tag \
                               \$DOCKERHUB_USER/\$svc:${IMAGE_TAG} \
-                              \$DOCKERHUB_USER/\$svc:latest
+                              "\$image_ref"
                         done
                     """
                 }
