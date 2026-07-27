@@ -110,7 +110,7 @@ PY
                         fi
                     }
 
-                    ensure_image_available returntocorp/semgrep:1.94.0
+                    ensure_image_available python:3.12-alpine
 
                     mkdir -p reports
 
@@ -118,8 +118,8 @@ PY
                     docker run --rm \
                       -v "$WORKSPACE:/src" \
                       -w /src \
-                      returntocorp/semgrep:1.94.0 \
-                      semgrep scan --config auto --json --output reports/semgrep-report.json . > reports/semgrep-report.log 2>&1
+                      python:3.12-alpine \
+                      sh -c "pip install --no-cache-dir semgrep && semgrep scan --config auto --json --output reports/semgrep-report.json ." > reports/semgrep-report.log 2>&1
                     semgrep_exit=$?
                     set -e
 
@@ -207,12 +207,13 @@ PY
 
                     set +e
                     if [ -n "${SONAR_HOST_URL:-}" ] && [ -n "${SONAR_TOKEN:-}" ]; then
+                        docker pull sonarsource/sonar-scanner-cli:latest >/dev/null 2>&1 || true
                         docker run --rm \
                           -e SONAR_HOST_URL \
                           -e SONAR_TOKEN \
                           -v "$WORKSPACE:/src" \
                           -w /src \
-                          sonarsource/sonar-scanner-cli:5 \
+                          sonarsource/sonar-scanner-cli:latest \
                           -Dsonar.projectKey=bankapp-devops \
                           -Dsonar.projectName="Enterprise DevSecOps Observability Platform" \
                           -Dsonar.sources=. \
@@ -236,6 +237,7 @@ from pathlib import Path
 reports_dir = Path('reports')
 html_path = reports_dir / 'sonarqube-report.html'
 log_path = reports_dir / 'sonarqube-report.log'
+status_path = reports_dir / 'sonarqube-status.txt'
 
 log_text = log_path.read_text(errors='ignore') if log_path.exists() else ''
 status = 'completed'
@@ -270,38 +272,67 @@ PY
                         fi
                     }
 
-                    ensure_image_available anchore/grype:latest
+                    ensure_image_available nikitamathe/grype-with-db
 
-                    mkdir -p reports grype-db
+                    mkdir -p reports
 
-                    if [ ! -d grype-db ]; then
-                        mkdir -p grype-db
-                    fi
-
-                    if [ ! -f reports/html.tmpl ]; then
-                        echo "Missing Grype HTML template at reports/html.tmpl"
-                        exit 1
-                    fi
-
-                    if [ ! -f grype-db/metadata.json ] || [ ! -f grype-db/manager.db ]; then
-                        echo "Initializing Grype DB cache..."
-                        docker run --rm \
-                          -v "$WORKSPACE:/src" \
-                          -v "$WORKSPACE/reports:/reports" \
-                          -v "$WORKSPACE/grype-db:/root/.cache/grype/db" \
-                          anchore/grype:latest \
-                          db update
-                    fi
-
+                    set +e
                     docker run --rm \
                       -v "$WORKSPACE:/src" \
                       -v "$WORKSPACE/reports:/reports" \
-                      -v "$WORKSPACE/grype-db:/root/.cache/grype/db" \
-                      anchore/grype:latest \
+                      nikitamathe/grype-with-db \
                       dir:/src \
-                      -o template \
-                      -t /reports/html.tmpl \
-                      > reports/grype-report.html
+                      -o json > reports/grype-report.json 2> reports/grype-report.log
+                    grype_exit=$?
+                    set -e
+
+                    echo "grype_exit_code=$grype_exit" > reports/grype-status.txt
+                '''
+
+                sh '''
+                    python3 - <<'PY'
+import json
+from pathlib import Path
+
+reports_dir = Path('reports')
+html_path = reports_dir / 'grype-report.html'
+json_path = reports_dir / 'grype-report.json'
+log_path = reports_dir / 'grype-report.log'
+status_path = reports_dir / 'grype-status.txt'
+
+findings = []
+if json_path.exists():
+    try:
+        payload = json.loads(json_path.read_text(errors='ignore'))
+        if isinstance(payload, list):
+            findings = payload
+        elif isinstance(payload, dict):
+            findings = payload.get('matches', [])
+    except Exception:
+        findings = []
+
+log_text = log_path.read_text(errors='ignore') if log_path.exists() else ''
+status_text = status_path.read_text(errors='ignore') if status_path.exists() else ''
+status = 'completed'
+if 'grype_exit_code=0' in status_text:
+    status = 'passed'
+elif 'grype_exit_code=1' in status_text:
+    status = 'findings detected'
+else:
+    status = 'review required'
+
+rows = ''.join(
+    f"<tr><td>{index + 1}</td><td>{item.get('artifact', {}).get('name', 'N/A')}</td><td>{item.get('vulnerability', {}).get('id', 'N/A')}</td><td>{item.get('vulnerability', {}).get('severity', 'N/A')}</td></tr>"
+    for index, item in enumerate(findings[:20])
+)
+summary = f"<h2>Grype Scan Report</h2><p>Status: {status}</p><p>Findings: {len(findings)}</p>"
+if rows:
+    summary += "<table><tr><th>#</th><th>Artifact</th><th>Vulnerability</th><th>Severity</th></tr>" + rows + "</table>"
+else:
+    summary += "<p>No package vulnerabilities detected.</p>"
+summary += "<h3>Log</h3><pre>" + chr(10).join(log_text.splitlines()[-40:]) + "</pre>"
+html_path.write_text('<html><body>' + summary + '</body></html>')
+PY
                 '''
             }
         }
