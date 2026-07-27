@@ -309,18 +309,28 @@ PY
 
         stage('Trivy Image Scan') {
             steps {
-                sh """
-                    services="auth-service account-service transaction-service notification-service api-gateway frontend"
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'dockerhub_nikitamathe',
+                        usernameVariable: 'DOCKERHUB_USER',
+                        passwordVariable: 'DOCKERHUB_PASS'
+                    )
+                ]) {
+                    sh """
+                        set -e
 
-                    for svc in \$services; do
-                        echo "Scanning \$svc..."
+                        services="auth-service account-service transaction-service notification-service api-gateway frontend"
 
-                        trivy image \
-                          --severity HIGH,CRITICAL \
-                          --exit-code 1 \
-                          \$DOCKERHUB_USER/\$svc:${IMAGE_TAG}
-                    done
-                """
+                        for svc in \$services; do
+                            echo "Scanning \$svc..."
+
+                            trivy image \
+                              --severity HIGH,CRITICAL \
+                              --exit-code 1 \
+                              \$DOCKERHUB_USER/\$svc:${IMAGE_TAG}
+                        done
+                    """
+                }
             }
         }
 
