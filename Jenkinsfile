@@ -212,10 +212,10 @@ PY
                               -Dsonar.java.binaries=. \
                               -Dsonar.exclusions=**/node_modules/**,**/target/**,**/*.jar,**/*.zip,**/*.tar.gz \
                               > reports/sonarqube-report.log 2>&1
-                            sonar_exit=$?
+                            sonar_exit=\$?
                             set -e
 
-                            echo "sonarqube_exit_code=$sonar_exit" > reports/sonarqube-status.txt
+                            echo "sonarqube_exit_code=\$sonar_exit" > reports/sonarqube-status.txt
                         """
                     }
                 }
