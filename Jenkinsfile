@@ -163,19 +163,20 @@ PY
             steps {
                 sh '''
                     echo "======================================="
-                    echo "Compiling Java Microservices..."
+                    echo "Building Java microservices with Docker Compose..."
                     echo "======================================="
 
-                    services="auth-service account-service transaction-service notification-service api-gateway"
+                    if ! docker compose version >/dev/null 2>&1; then
+                        echo "docker compose is not available on this Jenkins agent"
+                        exit 1
+                    fi
 
-                    for svc in $services; do
-                        echo "Building $svc..."
-                        docker run --rm \
-                          -v "$WORKSPACE:/workspace" \
-                          -w /workspace \
-                          maven:3.9.9-eclipse-temurin-21 \
-                          sh -c "cd /workspace/$svc && mvn clean package -DskipTests"
-                    done
+                    docker compose build \
+                      auth-service \
+                      account-service \
+                      transaction-service \
+                      notification-service \
+                      api-gateway
                 '''
             }
         }
