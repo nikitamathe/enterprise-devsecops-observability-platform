@@ -22,7 +22,7 @@ COPY --from=builder /app/target/*.jar app.jar
 
 USER banking
 
-EXPOSE 8080
+EXPOSE 8085
 
 ENTRYPOINT ["java", \
   "-XX:+UseContainerSupport", \

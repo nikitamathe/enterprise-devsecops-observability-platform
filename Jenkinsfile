@@ -24,7 +24,12 @@ pipeline {
                     echo "Running Gitleaks Secret Scan..."
                     echo "======================================="
 
-                    gitleaks detect --source . --verbose
+                    docker run --rm \
+                      -v "$WORKSPACE:/src" \
+                      -w /src \
+                      zricethezav/gitleaks:v8.18.2 detect \
+                      --source . \
+                      --verbose
                 '''
             }
         }
@@ -36,7 +41,11 @@ pipeline {
                     echo "Running Semgrep SAST Scan..."
                     echo "======================================="
 
-                    semgrep scan --config auto .
+                    docker run --rm \
+                      -v "$WORKSPACE:/src" \
+                      -w /src \
+                      python:3.12-alpine \
+                      sh -c "pip install --no-cache-dir semgrep && semgrep scan --config auto ."
                 '''
             }
         }

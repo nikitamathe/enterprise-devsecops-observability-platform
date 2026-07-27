@@ -147,7 +147,7 @@ services:
     environment:
       <<: [*jwt-env, *service-hosts]
     ports:
-      - "8080:8080"
+      - "8085:8085"
     networks:
       - banking-net
     depends_on:
