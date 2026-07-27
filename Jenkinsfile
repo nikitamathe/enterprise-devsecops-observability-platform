@@ -73,7 +73,7 @@ if findings:
 else:
     summary += '<p>No secrets detected.</p>'
 
-summary += '<h3>Log</h3><pre>' + '\n'.join(log_text.splitlines()[-40:]) + '</pre>'
+summary += '<h3>Log</h3><pre>' + chr(10).join(log_text.splitlines()[-40:]) + '</pre>'
 html_path.write_text('<html><body>' + summary + '</body></html>')
 PY
                 '''
@@ -130,7 +130,7 @@ if findings:
 else:
     summary += '<p>No issues detected.</p>'
 
-summary += '<h3>Log</h3><pre>' + '\n'.join(log_text.splitlines()[-40:]) + '</pre>'
+summary += '<h3>Log</h3><pre>' + chr(10).join(log_text.splitlines()[-40:]) + '</pre>'
 html_path.write_text('<html><body>' + summary + '</body></html>')
 PY
                 '''
@@ -139,40 +139,23 @@ PY
 
         stage('Publish Scan Reports') {
             steps {
-                publishHTML(
-                    target: [
-                        allowMissing: true,
-                        alwaysLinkToLastBuild: true,
-                        keepAll: true,
-                        reportDir: 'reports',
-                        reportFiles: 'gitleaks-report.html',
-                        reportName: 'Gitleaks Report',
-                        reportTitles: 'Gitleaks Scan Report'
-                    ]
+                sh '''
+                    echo "======================================="
+                    echo "Archiving scan reports..."
+                    echo "======================================="
+
+                    if [ -d reports ]; then
+                        find reports -maxdepth 1 -type f | sort
+                    else
+                        echo "No reports directory found"
+                    fi
+                '''
+
+                archiveArtifacts(
+                    artifacts: 'reports/*',
+                    allowEmptyArchive: true,
+                    fingerprint: true
                 )
-                publishHTML(
-                    target: [
-                        allowMissing: true,
-                        alwaysLinkToLastBuild: true,
-                        keepAll: true,
-                        reportDir: 'reports',
-                        reportFiles: 'semgrep-report.html',
-                        reportName: 'Semgrep Report',
-                        reportTitles: 'Semgrep Scan Report'
-                    ]
-                )
-                publishHTML(
-                    target: [
-                        allowMissing: true,
-                        alwaysLinkToLastBuild: true,
-                        keepAll: true,
-                        reportDir: 'reports',
-                        reportFiles: 'sonarqube-report.html',
-                        reportName: 'SonarQube Report',
-                        reportTitles: 'SonarQube Scan Report'
-                    ]
-                )
-                archiveArtifacts artifacts: 'reports/*', fingerprint: true
             }
         }
 
@@ -187,9 +170,11 @@ PY
 
                     for svc in $services; do
                         echo "Building $svc..."
-                        cd $svc
-                        mvn clean package -DskipTests
-                        cd ..
+                        docker run --rm \
+                          -v "$WORKSPACE:/workspace" \
+                          -w /workspace \
+                          maven:3.9.9-eclipse-temurin-21 \
+                          sh -c "cd /workspace/$svc && mvn clean package -DskipTests"
                     done
                 '''
             }
@@ -273,18 +258,11 @@ PY
 
         stage('Publish Grype Report') {
             steps {
-                publishHTML(
-                    target: [
-                        allowMissing: false,
-                        alwaysLinkToLastBuild: true,
-                        keepAll: true,
-                        reportDir: 'reports',
-                        reportFiles: 'grype-report.html',
-                        reportName: 'Grype HTML Report',
-                        reportTitles: 'Grype Vulnerability Report'
-                    ]
+                archiveArtifacts(
+                    artifacts: 'reports/grype-report.html',
+                    allowEmptyArchive: true,
+                    fingerprint: true
                 )
-                archiveArtifacts artifacts: 'reports/grype-report.html', fingerprint: true
             }
         }
 
