@@ -365,7 +365,7 @@ rows = []
 for name, filename in pages:
     path = reports_dir / filename
     if path.exists():
-        rows.append(f"<tr><td>{name}</td><td><a href=\"{filename}\">{filename}</a></td><td>Available</td></tr>")
+        rows.append(f"<tr><td>{name}</td><td><a href='{filename}'>{filename}</a></td><td>Available</td></tr>")
     else:
         rows.append(f"<tr><td>{name}</td><td>{filename}</td><td>Not generated</td></tr>")
 
