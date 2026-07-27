@@ -283,6 +283,16 @@ PY
                         exit 1
                     fi
 
+                    if [ ! -f grype-db/metadata.json ] || [ ! -f grype-db/manager.db ]; then
+                        echo "Initializing Grype DB cache..."
+                        docker run --rm \
+                          -v "$WORKSPACE:/src" \
+                          -v "$WORKSPACE/reports:/reports" \
+                          -v "$WORKSPACE/grype-db:/root/.cache/grype/db" \
+                          anchore/grype:latest \
+                          db update
+                    fi
+
                     docker run --rm \
                       -v "$WORKSPACE:/src" \
                       -v "$WORKSPACE/reports:/reports" \
