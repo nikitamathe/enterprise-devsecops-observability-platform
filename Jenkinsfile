@@ -137,28 +137,6 @@ PY
             }
         }
 
-        stage('Publish Scan Reports') {
-            steps {
-                sh '''
-                    echo "======================================="
-                    echo "Archiving scan reports..."
-                    echo "======================================="
-
-                    if [ -d reports ]; then
-                        find reports -maxdepth 1 -type f | sort
-                    else
-                        echo "No reports directory found"
-                    fi
-                '''
-
-                archiveArtifacts(
-                    artifacts: 'reports/*',
-                    allowEmptyArchive: true,
-                    fingerprint: true
-                )
-            }
-        }
-
         stage('Build Artifacts') {
             steps {
                 sh '''
@@ -183,28 +161,36 @@ PY
 
         stage('SonarQube Analysis') {
             steps {
-                script {
-                    def scannerHome = tool 'SonarScanner'
+                sh '''
+                    echo "======================================="
+                    echo "Running SonarQube Analysis..."
+                    echo "======================================="
 
-                    withSonarQubeEnv('SonarQube') {
-                        sh """
-                            mkdir -p reports
+                    mkdir -p reports
 
-                            set +e
-                            ${scannerHome}/bin/sonar-scanner \
-                              -Dsonar.projectKey=bankapp-devops \
-                              -Dsonar.projectName="Enterprise DevSecOps Observability Platform" \
-                              -Dsonar.sources=. \
-                              -Dsonar.java.binaries=. \
-                              -Dsonar.exclusions=**/node_modules/**,**/target/**,**/*.jar,**/*.zip,**/*.tar.gz \
-                              > reports/sonarqube-report.log 2>&1
-                            sonar_exit=\$?
-                            set -e
+                    set +e
+                    if [ -n "${SONAR_HOST_URL:-}" ]; then
+                        docker run --rm \
+                          -e SONAR_HOST_URL \
+                          -e SONAR_TOKEN \
+                          -v "$WORKSPACE:/src" \
+                          -w /src \
+                          sonarsource/sonar-scanner-cli:5 \
+                          -Dsonar.projectKey=bankapp-devops \
+                          -Dsonar.projectName="Enterprise DevSecOps Observability Platform" \
+                          -Dsonar.sources=. \
+                          -Dsonar.java.binaries=. \
+                          -Dsonar.exclusions=**/node_modules/**,**/target/**,**/*.jar,**/*.zip,**/*.tar.gz \
+                          > reports/sonarqube-report.log 2>&1
+                        sonar_exit=$?
+                    else
+                        echo "SonarQube host URL is not configured. Skipping analysis and generating a placeholder report." > reports/sonarqube-report.log
+                        sonar_exit=0
+                    fi
+                    set -e
 
-                            echo "sonarqube_exit_code=\$sonar_exit" > reports/sonarqube-status.txt
-                        """
-                    }
-                }
+                    echo "sonarqube_exit_code=$sonar_exit" > reports/sonarqube-status.txt
+                '''
 
                 sh '''
                     python3 - <<'PY'
@@ -218,6 +204,8 @@ log_text = log_path.read_text(errors='ignore') if log_path.exists() else ''
 status = 'completed'
 if 'ANALYSIS SUCCESSFUL' in log_text or 'SUCCESS' in log_text.upper():
     status = 'successful'
+elif 'not configured' in log_text.lower() or 'skipping' in log_text.lower():
+    status = 'skipped'
 else:
     status = 'review required'
 
@@ -267,19 +255,25 @@ PY
             }
         }
 
-        stage('Login to Docker Hub') {
+        stage('Publish Scan Reports') {
             steps {
-                withCredentials([
-                    usernamePassword(
-                        credentialsId: 'dockerhub_nikitamathe',
-                        usernameVariable: 'DOCKERHUB_USER',
-                        passwordVariable: 'DOCKERHUB_PASS'
-                    )
-                ]) {
-                    sh '''
-                        echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USER" --password-stdin
-                    '''
-                }
+                sh '''
+                    echo "======================================="
+                    echo "Archiving scan reports..."
+                    echo "======================================="
+
+                    if [ -d reports ]; then
+                        find reports -maxdepth 1 -type f | sort
+                    else
+                        echo "No reports directory found"
+                    fi
+                '''
+
+                archiveArtifacts(
+                    artifacts: 'reports/*',
+                    allowEmptyArchive: true,
+                    fingerprint: true
+                )
             }
         }
 
@@ -315,6 +309,23 @@ PY
 
         stage('Trivy Image Scan') {
             steps {
+                sh """
+                    services="auth-service account-service transaction-service notification-service api-gateway frontend"
+
+                    for svc in \$services; do
+                        echo "Scanning \$svc..."
+
+                        trivy image \
+                          --severity HIGH,CRITICAL \
+                          --exit-code 1 \
+                          \$DOCKERHUB_USER/\$svc:${IMAGE_TAG}
+                    done
+                """
+            }
+        }
+
+        stage('Login to Docker Hub') {
+            steps {
                 withCredentials([
                     usernamePassword(
                         credentialsId: 'dockerhub_nikitamathe',
@@ -322,18 +333,9 @@ PY
                         passwordVariable: 'DOCKERHUB_PASS'
                     )
                 ]) {
-                    sh """
-                        services="auth-service account-service transaction-service notification-service api-gateway frontend"
-
-                        for svc in \$services; do
-                            echo "Scanning \$svc..."
-
-                            trivy image \
-                              --severity HIGH,CRITICAL \
-                              --exit-code 1 \
-                              \$DOCKERHUB_USER/\$svc:${IMAGE_TAG}
-                        done
-                    """
+                    sh '''
+                        echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USER" --password-stdin
+                    '''
                 }
             }
         }
