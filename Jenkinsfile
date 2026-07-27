@@ -110,7 +110,7 @@ PY
                         fi
                     }
 
-                    ensure_image_available python:3.12-alpine
+                    ensure_image_available returntocorp/semgrep:1.94.0
 
                     mkdir -p reports
 
@@ -118,8 +118,8 @@ PY
                     docker run --rm \
                       -v "$WORKSPACE:/src" \
                       -w /src \
-                      python:3.12-alpine \
-                      sh -c "pip install --no-cache-dir semgrep && semgrep scan --config auto --json --output reports/semgrep-report.json ." > reports/semgrep-report.log 2>&1
+                      returntocorp/semgrep:1.94.0 \
+                      semgrep scan --config auto --json --output reports/semgrep-report.json . > reports/semgrep-report.log 2>&1
                     semgrep_exit=$?
                     set -e
 
