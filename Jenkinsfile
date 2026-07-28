@@ -91,6 +91,15 @@ html_path.write_text('<html><body>' + summary + '</body></html>')
 PY
                 '''
             }
+            post {
+                always {
+                    archiveArtifacts(
+                        artifacts: 'reports/gitleaks-report.*',
+                        allowEmptyArchive: true,
+                        fingerprint: true
+                    )
+                }
+            }
         }
 
         stage('Semgrep Scan') {
@@ -160,6 +169,15 @@ html_path.write_text('<html><body>' + summary + '</body></html>')
 PY
                 '''
             }
+            post {
+                always {
+                    archiveArtifacts(
+                        artifacts: 'reports/semgrep-report.*',
+                        allowEmptyArchive: true,
+                        fingerprint: true
+                    )
+                }
+            }
         }
 
         stage('Build Artifacts') {
@@ -194,67 +212,38 @@ PY
                       api-gateway
                 '''
             }
+        
         }
 
         stage('SonarQube Analysis') {
             steps {
-                withCredentials([
-                    string(credentialsId: 'sonar_host_url', variable: 'SONAR_HOST_URL'),
-                    string(credentialsId: 'sonar_token', variable: 'SONAR_TOKEN')
-                ]) {
+                withSonarQubeEnv('SonarQube') { 
                     sh '''
                         echo "======================================="
-                        echo "Running SonarQube Analysis..."
+                        echo "Running SonarScanner CLI via Docker..."
                         echo "======================================="
 
-                        mkdir -p reports
+                        if ! docker image inspect sonarsource/sonar-scanner-cli:latest >/dev/null 2>&1; then
+                            docker pull sonarsource/sonar-scanner-cli:latest
+                        fi
 
-                        set +e
-                        docker pull sonarsource/sonar-scanner-cli:latest >/dev/null 2>&1 || true
+                        # ADDED --network host so localhost:9000 resolves to the host machine
                         docker run --rm \
-                          -e SONAR_HOST_URL \
-                          -e SONAR_TOKEN \
-                          -v "$WORKSPACE:/src" \
-                          -w /src \
+                          --network host \
+                          -e SONAR_HOST_URL="$SONAR_HOST_URL" \
+                          -e SONAR_TOKEN="$SONAR_AUTH_TOKEN" \
+                          -v "$WORKSPACE:/usr/src" \
                           sonarsource/sonar-scanner-cli:latest \
-                          -Dsonar.host.url="$SONAR_HOST_URL" \
-                          -Dsonar.login="$SONAR_TOKEN" \
-                          -Dsonar.projectKey=bankapp-devops \
+                          -Dsonar.projectKey=edop \
                           -Dsonar.projectName="Enterprise DevSecOps Observability Platform" \
                           -Dsonar.sources=. \
                           -Dsonar.java.binaries=. \
-                          -Dsonar.exclusions=**/node_modules/**,**/target/**,**/*.jar,**/*.zip,**/*.tar.gz \
-                          > reports/sonarqube-report.log 2>&1
-                        sonar_exit=$?
-                        set -e
-
-                        echo "sonarqube_exit_code=$sonar_exit" > reports/sonarqube-status.txt
+                          -Dsonar.exclusions="**/reports/**"
                     '''
                 }
-
-                sh '''
-                    python3 - <<'PY'
-from pathlib import Path
-
-reports_dir = Path('reports')
-html_path = reports_dir / 'sonarqube-report.html'
-log_path = reports_dir / 'sonarqube-report.log'
-status_path = reports_dir / 'sonarqube-status.txt'
-
-log_text = log_path.read_text(errors='ignore') if log_path.exists() else ''
-status = 'completed'
-if 'ANALYSIS SUCCESSFUL' in log_text or 'SUCCESS' in log_text.upper():
-    status = 'successful'
-else:
-    status = 'review required'
-
-summary = f"<h2>SonarQube Scan Report</h2><p>Status: {status}</p><pre>{log_text[-4000:]}</pre>"
-html_path.write_text('<html><body>' + summary + '</body></html>')
-PY
-                '''
             }
         }
-
+        
         stage('Grype Filesystem Scan') {
             steps {
                 sh '''
@@ -335,181 +324,80 @@ html_path.write_text('<html><body>' + summary + '</body></html>')
 PY
                 '''
             }
-        }
-
-        stage('Publish Grype Report') {
-            steps {
-                archiveArtifacts(
-                    artifacts: 'reports/grype-report.html',
-                    allowEmptyArchive: true,
-                    fingerprint: true
-                )
-            }
-        }
-
-        stage('Publish HTML Reports') {
-            steps {
-                sh '''
-                    set -e
-                    mkdir -p reports
-
-                    if command -v python3 >/dev/null 2>&1; then
-                        python3 - <<'PY'
-from pathlib import Path
-
-reports_dir = Path('reports')
-pages = [
-    ('Gitleaks', 'gitleaks-report.html'),
-    ('Semgrep', 'semgrep-report.html'),
-    ('SonarQube', 'sonarqube-report.html'),
-    ('Grype', 'grype-report.html'),
-]
-
-rows = []
-for name, filename in pages:
-    path = reports_dir / filename
-    if path.exists():
-        rows.append(f"<tr><td>{name}</td><td><a href='{filename}'>{filename}</a></td><td>Available</td></tr>")
-    else:
-        rows.append(f"<tr><td>{name}</td><td>{filename}</td><td>Not generated</td></tr>")
-
-html = f"""<!DOCTYPE html>
-<html>
-<head>
-  <meta charset=\"utf-8\">
-  <title>Security Reports</title>
-  <style>
-    body {{ font-family: Arial, sans-serif; margin: 24px; }}
-    table {{ border-collapse: collapse; width: 100%; }}
-    th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
-    th {{ background: #f2f2f2; }}
-    a {{ color: #0b57d0; text-decoration: none; }}
-  </style>
-</head>
-<body>
-  <h1>Security Scan Reports</h1>
-  <p>Open the reports below from the Jenkins HTML report view.</p>
-  <table>
-    <tr><th>Scan</th><th>Report File</th><th>Status</th></tr>
-    {''.join(rows)}
-  </table>
-</body>
-</html>"""
-
-(reports_dir / 'index.html').write_text(html)
-PY
-                    else
-                        echo "python3 not found - creating placeholder index.html"
-                        cat > reports/index.html <<'HTML'
-<html><body><h1>Security Reports</h1><p>Report generator unavailable (python3 missing).</p></body></html>
-HTML
-                    fi
-
-                    echo "=== reports directory listing ==="
-                    ls -la reports || true
-                    echo "=== workspace path ==="
-                    pwd || true
-                '''
-            }
             post {
                 always {
-                    sh '''
-                        mkdir -p reports
-                        echo "publishHTML not available or skipped. Reports are available in reports/index.html." > reports/publishHTML-status.txt
-                    '''
+                    archiveArtifacts(
+                        artifacts: 'reports/grype-report.*',
+                        allowEmptyArchive: true,
+                        fingerprint: true
+                    )
                 }
             }
         }
 
-        stage('Publish Scan Reports') {
-            steps {
-                sh '''
-                    echo "======================================="
-                    echo "Archiving scan reports..."
-                    echo "======================================="
+        
 
-                    if [ -d reports ]; then
-                        find reports -maxdepth 1 -type f | sort
-                    else
-                        echo "No reports directory found"
-                    fi
-                '''
+        
 
-                archiveArtifacts(
-                    artifacts: 'reports/*',
-                    allowEmptyArchive: true,
-                    fingerprint: true
-                )
-            }
-        }
+        
 
         stage('Build Docker Images') {
             steps {
-                withCredentials([
-                    usernamePassword(
-                        credentialsId: 'dockerhub_nikitamathe',
-                        usernameVariable: 'DOCKERHUB_USER',
-                        passwordVariable: 'DOCKERHUB_PASS'
-                    )
-                ]) {
-                    sh """
-                        set -e
+                sh '''
+                    set -e
 
-                        services="auth-service account-service transaction-service notification-service api-gateway frontend"
+                    services="auth-service account-service transaction-service notification-service api-gateway frontend"
 
-                        for svc in \$services; do
-                            image_ref="\$DOCKERHUB_USER/\$svc:latest"
+                    for svc in $services; do
+                        image_ref="$svc:latest"
 
-                            if docker image inspect "\$image_ref" >/dev/null 2>&1; then
-                                created_at=\$(docker image inspect "\$image_ref" --format '{{.Created}}')
-                                created_epoch=\$(date -d "\$created_at" +%s 2>/dev/null || echo 0)
-                                now_epoch=\$(date +%s)
-                                age_days=\$(( (now_epoch - created_epoch) / 86400 ))
+                        if docker image inspect "$image_ref" >/dev/null 2>&1; then
+                            created_at=$(docker image inspect "$image_ref" --format '{{.Created}}')
+                            created_epoch=$(date -d "$created_at" +%s 2>/dev/null || echo 0)
+                            now_epoch=$(date +%s)
+                            age_days=$(( (now_epoch - created_epoch) / 86400 ))
 
-                                if [ "\$age_days" -lt ${CACHE_DAYS} ]; then
-                                    echo "Using cached build image \$image_ref (age \$age_days days)"
-                                    docker tag "\$image_ref" "\$DOCKERHUB_USER/\$svc:${IMAGE_TAG}"
-                                    continue
-                                fi
+                            if [ "$age_days" -lt ${CACHE_DAYS} ]; then
+                                echo "Using cached local image $image_ref (age $age_days days)"
+                                docker tag "$image_ref" "$svc:${IMAGE_TAG}"
+                                continue
                             fi
+                        fi
 
-                            echo "Building \$svc..."
-                            docker build --pull=false \
-                              -t \$DOCKERHUB_USER/\$svc:${IMAGE_TAG} \
-                              ./\$svc
+                        echo "Building $svc..."
+                        docker build --pull=false \
+                          -t $svc:${IMAGE_TAG} \
+                          ./$svc
 
-                            docker tag \
-                              \$DOCKERHUB_USER/\$svc:${IMAGE_TAG} \
-                              "\$image_ref"
-                        done
-                    """
-                }
+                        docker tag \
+                          $svc:${IMAGE_TAG} \
+                          $svc:latest
+                    done
+                '''
             }
         }
 
         stage('Trivy Image Scan') {
             steps {
-                withCredentials([
-                    usernamePassword(
-                        credentialsId: 'dockerhub_nikitamathe',
-                        usernameVariable: 'DOCKERHUB_USER',
-                        passwordVariable: 'DOCKERHUB_PASS'
+                sh '''
+                    set -e
+
+                    mkdir -p reports
+                    services="auth-service account-service transaction-service notification-service api-gateway frontend"
+
+                    for svc in $services; do
+                        echo "Scanning $svc:${IMAGE_TAG}..."
+                        trivy image --severity HIGH,CRITICAL --format json -o reports/trivy-${svc}.json $svc:${IMAGE_TAG} || true
+                    done
+                '''
+            }
+            post {
+                always {
+                    archiveArtifacts(
+                        artifacts: 'reports/trivy-*.json',
+                        allowEmptyArchive: true,
+                        fingerprint: true
                     )
-                ]) {
-                    sh """
-                        set -e
-
-                        services="auth-service account-service transaction-service notification-service api-gateway frontend"
-
-                        for svc in \$services; do
-                            echo "Scanning \$svc..."
-
-                            trivy image \
-                              --severity HIGH,CRITICAL \
-                              --exit-code 1 \
-                              \$DOCKERHUB_USER/\$svc:${IMAGE_TAG}
-                        done
-                    """
                 }
             }
         }
