@@ -13,7 +13,7 @@ pipeline {
                 git(
                     branch: 'main',
                     credentialsId: 'github_nikitamathe',
-                    url: 'https://github.com/nikitamathe/bankapp-devops.git'
+                    url: 'https://github.com/nikitamathe/enterprise-devsecops-observability-platform.git'
                 )
             }
         }
@@ -198,15 +198,18 @@ PY
 
         stage('SonarQube Analysis') {
             steps {
-                sh '''
-                    echo "======================================="
-                    echo "Running SonarQube Analysis..."
-                    echo "======================================="
+                withCredentials([
+                    string(credentialsId: 'sonar_host_url', variable: 'SONAR_HOST_URL'),
+                    string(credentialsId: 'sonar_token', variable: 'SONAR_TOKEN')
+                ]) {
+                    sh '''
+                        echo "======================================="
+                        echo "Running SonarQube Analysis..."
+                        echo "======================================="
 
-                    mkdir -p reports
+                        mkdir -p reports
 
-                    set +e
-                    if [ -n "${SONAR_HOST_URL:-}" ] && [ -n "${SONAR_TOKEN:-}" ]; then
+                        set +e
                         docker pull sonarsource/sonar-scanner-cli:latest >/dev/null 2>&1 || true
                         docker run --rm \
                           -e SONAR_HOST_URL \
@@ -214,6 +217,8 @@ PY
                           -v "$WORKSPACE:/src" \
                           -w /src \
                           sonarsource/sonar-scanner-cli:latest \
+                          -Dsonar.host.url="$SONAR_HOST_URL" \
+                          -Dsonar.login="$SONAR_TOKEN" \
                           -Dsonar.projectKey=bankapp-devops \
                           -Dsonar.projectName="Enterprise DevSecOps Observability Platform" \
                           -Dsonar.sources=. \
@@ -221,14 +226,11 @@ PY
                           -Dsonar.exclusions=**/node_modules/**,**/target/**,**/*.jar,**/*.zip,**/*.tar.gz \
                           > reports/sonarqube-report.log 2>&1
                         sonar_exit=$?
-                    else
-                        echo "SonarQube host URL or token is not configured. Skipping analysis and generating a placeholder report." > reports/sonarqube-report.log
-                        sonar_exit=0
-                    fi
-                    set -e
+                        set -e
 
-                    echo "sonarqube_exit_code=$sonar_exit" > reports/sonarqube-status.txt
-                '''
+                        echo "sonarqube_exit_code=$sonar_exit" > reports/sonarqube-status.txt
+                    '''
+                }
 
                 sh '''
                     python3 - <<'PY'
@@ -243,8 +245,6 @@ log_text = log_path.read_text(errors='ignore') if log_path.exists() else ''
 status = 'completed'
 if 'ANALYSIS SUCCESSFUL' in log_text or 'SUCCESS' in log_text.upper():
     status = 'successful'
-elif 'not configured' in log_text.lower() or 'skipping' in log_text.lower():
-    status = 'skipped'
 else:
     status = 'review required'
 
@@ -350,7 +350,11 @@ PY
         stage('Publish HTML Reports') {
             steps {
                 sh '''
-                    python3 - <<'PY'
+                    set -e
+                    mkdir -p reports
+
+                    if command -v python3 >/dev/null 2>&1; then
+                        python3 - <<'PY'
 from pathlib import Path
 
 reports_dir = Path('reports')
@@ -394,17 +398,26 @@ html = f"""<!DOCTYPE html>
 
 (reports_dir / 'index.html').write_text(html)
 PY
-                '''
+                    else
+                        echo "python3 not found - creating placeholder index.html"
+                        cat > reports/index.html <<'HTML'
+<html><body><h1>Security Reports</h1><p>Report generator unavailable (python3 missing).</p></body></html>
+HTML
+                    fi
 
-                publishHTML(target: [
-                    allowMissing: true,
-                    alwaysLinkToLastBuild: true,
-                    keepAll: true,
-                    reportDir: 'reports',
-                    reportFiles: 'index.html',
-                    reportName: 'Security Reports',
-                    reportTitles: 'Security Reports'
-                ])
+                    echo "=== reports directory listing ==="
+                    ls -la reports || true
+                    echo "=== workspace path ==="
+                    pwd || true
+                '''
+            }
+            post {
+                always {
+                    sh '''
+                        mkdir -p reports
+                        echo "publishHTML not available or skipped. Reports are available in reports/index.html." > reports/publishHTML-status.txt
+                    '''
+                }
             }
         }
 

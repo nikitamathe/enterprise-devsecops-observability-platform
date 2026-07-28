@@ -49,6 +49,7 @@ services:
 
   # ── Auth Service ───────────────────────────────────────────────────────────
   auth-service:
+    image: edop/auth-service:latest
     build:
       context: ./auth-service
       dockerfile: Dockerfile
@@ -69,6 +70,7 @@ services:
 
   # ── Account Service ────────────────────────────────────────────────────────
   account-service:
+    image: edop/account-service:latest
     build:
       context: ./account-service
       dockerfile: Dockerfile
@@ -93,6 +95,7 @@ services:
 
   # ── Transaction Service ────────────────────────────────────────────────────
   transaction-service:
+    image: edop/transaction-service:latest
     build:
       context: ./transaction-service
       dockerfile: Dockerfile
@@ -119,6 +122,7 @@ services:
 
   # ── Notification Service ───────────────────────────────────────────────────
   notification-service:
+    image: edop/notification-service:latest
     build:
       context: ./notification-service
       dockerfile: Dockerfile
@@ -139,6 +143,7 @@ services:
 
   # ── API Gateway ────────────────────────────────────────────────────────────
   api-gateway:
+    image: edop/api-gateway:latest
     build:
       context: ./api-gateway
       dockerfile: Dockerfile
@@ -160,11 +165,12 @@ services:
       notification-service:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep -q UP"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8085/actuator/health | grep -q UP"]
       <<: *hc-defaults
 
   # ── Frontend ───────────────────────────────────────────────────────────────
   frontend:
+    image: edop/frontend:latest
     build:
       context: ./frontend
       dockerfile: Dockerfile
