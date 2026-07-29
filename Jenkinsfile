@@ -433,8 +433,33 @@ PY
                         for svc in \$services; do
                             echo "Pushing \$svc..."
 
-                            docker push \$DOCKERHUB_USER/\$svc:${IMAGE_TAG}
-                            docker push \$DOCKERHUB_USER/\$svc:latest
+                            # Ensure the image is available under the Docker Hub namespace before pushing
+                            if docker image inspect \$DOCKERHUB_USER/\$svc:${IMAGE_TAG} >/dev/null 2>&1; then
+                                echo "Found \$DOCKERHUB_USER/\$svc:${IMAGE_TAG}"
+                            else
+                                if docker image inspect \$svc:${IMAGE_TAG} >/dev/null 2>&1; then
+                                    docker tag \$svc:${IMAGE_TAG} \$DOCKERHUB_USER/\$svc:${IMAGE_TAG}
+                                elif docker image inspect edop/\$svc:${IMAGE_TAG} >/dev/null 2>&1; then
+                                    docker tag edop/\$svc:${IMAGE_TAG} \$DOCKERHUB_USER/\$svc:${IMAGE_TAG}
+                                else
+                                    echo "Warning: no local image found for ${IMAGE_TAG} of \$svc"
+                                fi
+                            fi
+
+                            if docker image inspect \$DOCKERHUB_USER/\$svc:latest >/dev/null 2>&1; then
+                                echo "Found \$DOCKERHUB_USER/\$svc:latest"
+                            else
+                                if docker image inspect \$svc:latest >/dev/null 2>&1; then
+                                    docker tag \$svc:latest \$DOCKERHUB_USER/\$svc:latest
+                                elif docker image inspect edop/\$svc:latest >/dev/null 2>&1; then
+                                    docker tag edop/\$svc:latest \$DOCKERHUB_USER/\$svc:latest
+                                else
+                                    echo "Warning: no local image found for latest of \$svc"
+                                fi
+                            fi
+
+                            docker push \$DOCKERHUB_USER/\$svc:${IMAGE_TAG} || true
+                            docker push \$DOCKERHUB_USER/\$svc:latest || true
                         done
                     """
                 }
