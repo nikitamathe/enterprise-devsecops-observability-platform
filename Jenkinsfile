@@ -107,23 +107,22 @@ PY
                 sh '''
                     echo "Running Semgrep SAST Scan..."
                     mkdir -p reports
-                    chmod 777 reports
+                    chmod 777 reports  # Prevent permission denied errors
                     
-                    # Output as SARIF instead of JSON/HTML
                     docker run --rm \
-                      -v "$WORKSPACE:/src" \
-                      -w /src \
-                      returntocorp/semgrep:1.171.0-nonroot \
-                      semgrep scan --config auto --sarif -o reports/semgrep-report.sarif . || true
+                    -v "$WORKSPACE:/src" \
+                    -w /src \
+                    returntocorp/semgrep:1.171.0-nonroot \
+                    semgrep scan --config auto --junit-xml -o reports/semgrep-report.xml . || true
                 '''
             }
             post {
                 always {
-                    // Parses the SARIF file and creates a beautiful security dashboard in Jenkins
-                    recordIssues(
-                        tools: [sarif(pattern: 'reports/semgrep-report.sarif')],
-                        qualityGates: [[threshold: 1, type: 'TOTAL', unstable: true]] // Optional: Mark build unstable if issues found
-                    )
+                    // Archive the raw XML file
+                    archiveArtifacts artifacts: 'reports/semgrep-report.xml', allowEmptyArchive: true
+                    
+                    // Use Jenkins built-in JUnit parser to display the results in the UI
+                    junit testResults: 'reports/semgrep-report.xml', allowEmptyResults: true
                 }
             }
         }
