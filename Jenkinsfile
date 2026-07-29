@@ -107,6 +107,7 @@ PY
                 sh '''
                     echo "Running Semgrep SAST Scan..."
                     mkdir -p reports
+                    chmod 777 reports
                     
                     # Output as SARIF instead of JSON/HTML
                     docker run --rm \
