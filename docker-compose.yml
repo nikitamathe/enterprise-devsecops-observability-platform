@@ -49,7 +49,7 @@ services:
 
   # ── Auth Service ───────────────────────────────────────────────────────────
   auth-service:
-    image: edop/auth-service:latest
+    image: auth-service:latest
     build:
       context: ./auth-service
       dockerfile: Dockerfile
@@ -70,7 +70,7 @@ services:
 
   # ── Account Service ────────────────────────────────────────────────────────
   account-service:
-    image: edop/account-service:latest
+    image: account-service:latest
     build:
       context: ./account-service
       dockerfile: Dockerfile
@@ -95,7 +95,7 @@ services:
 
   # ── Transaction Service ────────────────────────────────────────────────────
   transaction-service:
-    image: edop/transaction-service:latest
+    image: transaction-service:latest
     build:
       context: ./transaction-service
       dockerfile: Dockerfile
@@ -122,7 +122,7 @@ services:
 
   # ── Notification Service ───────────────────────────────────────────────────
   notification-service:
-    image: edop/notification-service:latest
+    image: notification-service:latest
     build:
       context: ./notification-service
       dockerfile: Dockerfile
@@ -143,7 +143,7 @@ services:
 
   # ── API Gateway ────────────────────────────────────────────────────────────
   api-gateway:
-    image: edop/api-gateway:latest
+    image: api-gateway:latest
     build:
       context: ./api-gateway
       dockerfile: Dockerfile
@@ -170,7 +170,7 @@ services:
 
   # ── Frontend ───────────────────────────────────────────────────────────────
   frontend:
-    image: edop/frontend:latest
+    image: frontend:latest
     build:
       context: ./frontend
       dockerfile: Dockerfile
