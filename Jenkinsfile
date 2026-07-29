@@ -105,76 +105,23 @@ PY
         stage('Semgrep Scan') {
             steps {
                 sh '''
-                    echo "======================================="
                     echo "Running Semgrep SAST Scan..."
-                    echo "======================================="
-
-                    ensure_image_available() {
-                        local image="$1"
-                        if docker image inspect "$image" >/dev/null 2>&1; then
-                            echo "Using cached image: $image"
-                        else
-                            echo "Pulling missing image: $image"
-                            docker pull "$image"
-                        fi
-                    }
-
-                    ensure_image_available returntocorp/semgrep:1.171.0-nonroot
-
                     mkdir -p reports
-
-                    set +e
+                    
+                    # Output as SARIF instead of JSON/HTML
                     docker run --rm \
                       -v "$WORKSPACE:/src" \
                       -w /src \
                       returntocorp/semgrep:1.171.0-nonroot \
-                      semgrep scan --config auto --json --output reports/semgrep-report.json . > reports/semgrep-report.log 2>&1
-                    semgrep_exit=$?
-                    set -e
-
-                    echo "semgrep_exit_code=$semgrep_exit" > reports/semgrep-status.txt
-                '''
-
-                sh '''
-                    python3 - <<'PY'
-import json
-from pathlib import Path
-
-reports_dir = Path('reports')
-html_path = reports_dir / 'semgrep-report.html'
-log_path = reports_dir / 'semgrep-report.log'
-json_path = reports_dir / 'semgrep-report.json'
-
-log_text = log_path.read_text(errors='ignore') if log_path.exists() else ''
-findings = []
-if json_path.exists():
-    try:
-        payload = json.loads(json_path.read_text(errors='ignore'))
-        findings = payload.get('results', []) if isinstance(payload, dict) else []
-    except Exception:
-        findings = []
-
-summary = f"<h2>Semgrep Scan Report</h2><p>Findings: {len(findings)}</p>"
-if findings:
-    rows = ''.join(
-        f"<tr><td>{index + 1}</td><td>{item.get('check_id', 'N/A')}</td><td>{item.get('path', 'N/A')}</td></tr>"
-        for index, item in enumerate(findings[:20])
-    )
-    summary += f"<table><tr><th>#</th><th>Check</th><th>Path</th></tr>{rows}</table>"
-else:
-    summary += '<p>No issues detected.</p>'
-
-summary += '<h3>Log</h3><pre>' + chr(10).join(log_text.splitlines()[-40:]) + '</pre>'
-html_path.write_text('<html><body>' + summary + '</body></html>')
-PY
+                      semgrep scan --config auto --sarif -o reports/semgrep-report.sarif . || true
                 '''
             }
             post {
                 always {
-                    archiveArtifacts(
-                        artifacts: 'reports/semgrep-report.*',
-                        allowEmptyArchive: true,
-                        fingerprint: true
+                    // Parses the SARIF file and creates a beautiful security dashboard in Jenkins
+                    recordIssues(
+                        tools: [sarif(pattern: 'reports/semgrep-report.sarif')],
+                        qualityGates: [[threshold: 1, type: 'TOTAL', unstable: true]] // Optional: Mark build unstable if issues found
                     )
                 }
             }
