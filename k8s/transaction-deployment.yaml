@@ -17,10 +17,10 @@ spec:
         - name: transaction-service
           image: nikitamathe/transaction-service:latest
           ports:
-            - containerPort: 8080
+            - containerPort: 8083
           env:
             - name: SPRING_DATASOURCE_URL
-              value: jdbc:mysql://mysql:3306/banking?useSSL=false&serverTimezone=UTC
+              value: jdbc:mysql://mysql:3306/banking?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
             - name: SPRING_DATASOURCE_USERNAME
               valueFrom:
                 secretKeyRef:
@@ -31,6 +31,14 @@ spec:
                 secretKeyRef:
                   name: mysql-secret
                   key: mysql-user-password
+            - name: ACCOUNT_SERVICE_HOST
+              value: account-service
+            - name: ACCOUNT_SERVICE_PORT
+              value: "8080"
+            - name: NOTIFICATION_SERVICE_HOST
+              value: notification-service
+            - name: NOTIFICATION_SERVICE_PORT
+              value: "8080"
 ---
 apiVersion: v1
 kind: Service
@@ -42,4 +50,4 @@ spec:
     app: transaction-service
   ports:
     - port: 8080
-      targetPort: 8080
+      targetPort: 8083

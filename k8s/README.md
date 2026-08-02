@@ -10,7 +10,7 @@ Important notes before applying:
 
 Recommended: professional Kustomize workflow (single command, but modular files)
 
-1) Edit images in `kustomization.yaml` (or run `kustomize edit set image`):
+1) Edit images in Kustomization (or run `kustomize edit set image`):
 
 ```bash
 # example: replace placeholder with your real image
@@ -26,7 +26,7 @@ kubectl apply -k .
 Notes:
 - Files are modular and minimal for easier reviews and upgrades.
 - Use `kubectl apply -k .` from inside `k8s/`.
-- If you prefer, `kubectl apply -f .` also works (applies all files in directory).
+- If you prefer, `kubectl apply -f .` also works because the Kustomization file is no longer treated as a manifest.
 
 Verify:
 - `kubectl -n banking get pods,svc,sts,pvc`
