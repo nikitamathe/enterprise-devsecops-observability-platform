@@ -12,6 +12,10 @@ spec:
     metadata:
       labels:
         app: account-service
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: /actuator/prometheus
+        prometheus.io/port: "8082"
     spec:
       containers:
         - name: account-service

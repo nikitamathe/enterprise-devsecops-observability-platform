@@ -14,6 +14,7 @@ resources:
   - api-gateway-config.yaml
   - frontend-deployment.yaml
   - frontend-nginx-config.yaml
+  - observability.yaml
 
 images:
   - name: nikitamathe/account-service
