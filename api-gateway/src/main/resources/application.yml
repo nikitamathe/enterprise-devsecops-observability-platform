@@ -11,6 +11,11 @@ spring:
       globalcors:
         cors-configurations:
           '[/**]':
+            allowedOriginPatterns:
+              - "http://localhost:*"
+              - "http://127.0.0.1:*"
+              - "http://*:*"
+              - "https://*:*"
             allowedOrigins:
               - "http://localhost:5173"   # Vite local dev
               - "http://localhost:80"     # Docker frontend
