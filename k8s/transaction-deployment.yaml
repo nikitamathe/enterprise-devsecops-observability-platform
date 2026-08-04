@@ -35,6 +35,14 @@ spec:
                 secretKeyRef:
                   name: mysql-secret
                   key: mysql-user-password
+            - name: ACCOUNT_SERVICE_HOST
+              value: "account-service"
+            - name: ACCOUNT_SERVICE_PORT
+              value: "8082"
+            - name: NOTIFICATION_SERVICE_HOST
+              value: "notification-service"
+            - name: NOTIFICATION_SERVICE_PORT
+              value: "8084"
 ---
 apiVersion: v1
 kind: Service

@@ -23,8 +23,8 @@ jwt:
   expiration: 86400000
 
 services:
-  account-service: http://${ACCOUNT_SERVICE_HOST:localhost}:${ACCOUNT_SERVICE_PORT:8082}
-  notification-service: http://${NOTIFICATION_SERVICE_HOST:localhost}:${NOTIFICATION_SERVICE_PORT:8084}
+  account-service: http://${ACCOUNT_SERVICE_HOST:account-service}:${ACCOUNT_SERVICE_PORT:8082}
+  notification-service: http://${NOTIFICATION_SERVICE_HOST:notification-service}:${NOTIFICATION_SERVICE_PORT:8084}
 
 management:
   endpoints:
