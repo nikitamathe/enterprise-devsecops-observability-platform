@@ -1,5 +1,7 @@
 package com.banking.transaction.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -62,7 +64,27 @@ public class Transaction {
     }
 
     public enum TransactionType {
-        DEPOSIT, WITHDRAWAL, TRANSFER
+        DEPOSIT,
+        WITHDRAWAL,
+        TRANSFER;
+
+        @JsonCreator
+        public static TransactionType fromValue(String value) {
+            if (value == null) {
+                return null;
+            }
+            return switch (value.trim().toUpperCase()) {
+                case "WITHDRAW" -> WITHDRAWAL;
+                case "DEPOSIT" -> DEPOSIT;
+                case "TRANSFER" -> TRANSFER;
+                default -> TransactionType.valueOf(value.trim().toUpperCase());
+            };
+        }
+
+        @JsonValue
+        public String toValue() {
+            return this.name();
+        }
     }
 
     public enum TransactionStatus {
