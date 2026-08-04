@@ -23,10 +23,14 @@ kustomize edit set image your-registry/account-service=nikitamathe/account-servi
 kubectl apply -k .
 ```
 
+Important:
+- `kubectl apply -f .` is not the right command for this folder because it contains a `Kustomization` manifest and Kustomize-specific resources.
+- Use `kubectl apply -k .` from inside `k8s/` instead.
+- If you are outside the directory, use `kubectl apply -k ./k8s`.
+
 Notes:
 - Files are modular and minimal for easier reviews and upgrades.
 - Use `kubectl apply -k .` from inside `k8s/`.
-- If you prefer, `kubectl apply -f .` also works (applies all files in directory).
 
 Verify:
 - `kubectl -n banking get pods,svc,sts,pvc`
