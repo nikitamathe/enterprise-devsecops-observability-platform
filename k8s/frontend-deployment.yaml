@@ -18,6 +18,14 @@ spec:
           image: nikitamathe/frontend:latest
           ports:
             - containerPort: 80
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/conf.d/app.conf
+              subPath: app.conf
+      volumes:
+        - name: nginx-config
+          configMap:
+            name: frontend-nginx-config
 ---
 apiVersion: v1
 kind: Service

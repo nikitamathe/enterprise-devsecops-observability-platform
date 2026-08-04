@@ -17,10 +17,26 @@ spec:
         - name: api-gateway
           image: nikitamathe/api-gateway:latest
           ports:
-            - containerPort: 8080
+            - containerPort: 8085
           env:
             - name: SPRING_DATASOURCE_URL
-              value: jdbc:mysql://mysql:3306/banking?useSSL=false&serverTimezone=UTC
+              value: "jdbc:mysql://mysql:3306/banking?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+            - name: AUTH_SERVICE_HOST
+              value: "auth-service"
+            - name: AUTH_SERVICE_PORT
+              value: "8081"
+            - name: ACCOUNT_SERVICE_HOST
+              value: "account-service"
+            - name: ACCOUNT_SERVICE_PORT
+              value: "8082"
+            - name: TRANSACTION_SERVICE_HOST
+              value: "transaction-service"
+            - name: TRANSACTION_SERVICE_PORT
+              value: "8083"
+            - name: NOTIFICATION_SERVICE_HOST
+              value: "notification-service"
+            - name: NOTIFICATION_SERVICE_PORT
+              value: "8084"
             - name: SPRING_DATASOURCE_USERNAME
               valueFrom:
                 secretKeyRef:
@@ -41,5 +57,5 @@ spec:
   selector:
     app: api-gateway
   ports:
-    - port: 8080
-      targetPort: 8080
+    - port: 8085
+      targetPort: 8085

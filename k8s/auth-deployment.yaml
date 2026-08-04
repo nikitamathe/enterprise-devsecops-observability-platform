@@ -17,10 +17,10 @@ spec:
         - name: auth-service
           image: nikitamathe/auth-service:latest
           ports:
-            - containerPort: 8080
+            - containerPort: 8081
           env:
             - name: SPRING_DATASOURCE_URL
-              value: jdbc:mysql://mysql:3306/banking?useSSL=false&serverTimezone=UTC
+              value: "jdbc:mysql://mysql:3306/banking?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
             - name: SPRING_DATASOURCE_USERNAME
               valueFrom:
                 secretKeyRef:
@@ -41,5 +41,5 @@ spec:
   selector:
     app: auth-service
   ports:
-    - port: 8080
-      targetPort: 8080
+    - port: 8081
+      targetPort: 8081

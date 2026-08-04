@@ -12,6 +12,7 @@ resources:
   - notification-deployment.yaml
   - api-gateway-deployment.yaml
   - frontend-deployment.yaml
+  - frontend-nginx-config.yaml
 
 images:
   - name: nikitamathe/account-service
