@@ -47,6 +47,14 @@ spec:
                 secretKeyRef:
                   name: mysql-secret
                   key: mysql-user-password
+          volumeMounts:
+            - name: gateway-config
+              mountPath: /app/config/application.yml
+              subPath: application.yml
+      volumes:
+        - name: gateway-config
+          configMap:
+            name: api-gateway-config
 ---
 apiVersion: v1
 kind: Service

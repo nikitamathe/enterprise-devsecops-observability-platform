@@ -11,6 +11,7 @@ resources:
   - transaction-deployment.yaml
   - notification-deployment.yaml
   - api-gateway-deployment.yaml
+  - api-gateway-config.yaml
   - frontend-deployment.yaml
   - frontend-nginx-config.yaml
 
