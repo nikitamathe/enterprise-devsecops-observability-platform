@@ -118,14 +118,15 @@ data:
     datasources:
       - name: Prometheus
         type: prometheus
+        uid: prometheus
         url: http://prometheus:9090
         access: proxy
         isDefault: true
       - name: Tempo
         type: tempo
+        uid: tempo
         url: http://tempo:3200
         access: proxy
-        uid: tempo
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -169,15 +170,10 @@ data:
       "links": [],
       "panels": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "fieldConfig": {
             "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
+              "color": { "mode": "thresholds" },
               "mappings": [],
               "thresholds": {
                 "mode": "absolute",
@@ -190,16 +186,18 @@ data:
             },
             "overrides": []
           },
-          "gridPos": { "h": 8, "w": 6, "x": 0, "y": 0 },
+          "gridPos": { "h": 6, "w": 4, "x": 0, "y": 0 },
           "id": 1,
           "options": {
+            "colorMode": "background",
+            "graphMode": "area",
+            "justifyMode": "center",
             "reduceOptions": {
               "calcs": ["lastNotNull"],
               "fields": "",
               "values": false
             },
-            "showThresholdLabels": false,
-            "showThresholdMarkers": true
+            "textMode": "value_and_name"
           },
           "targets": [
             {
@@ -208,14 +206,134 @@ data:
               "refId": "A"
             }
           ],
-          "title": "Service Health",
+          "title": "Healthy Services",
           "type": "stat"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "thresholds" },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "yellow", "value": 100 },
+                  { "color": "red", "value": 200 }
+                ]
+              },
+              "unit": "reqps"
+            },
+            "overrides": []
           },
+          "gridPos": { "h": 6, "w": 4, "x": 4, "y": 0 },
+          "id": 2,
+          "options": {
+            "colorMode": "background",
+            "graphMode": "area",
+            "justifyMode": "center",
+            "reduceOptions": {
+              "calcs": ["lastNotNull"],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "value_and_name"
+          },
+          "targets": [
+            {
+              "expr": "sum(rate(http_server_requests_seconds_count{job=\"spring-services\"}[5m]))",
+              "legendFormat": "Requests / sec",
+              "refId": "A"
+            }
+          ],
+          "title": "Request Rate",
+          "type": "stat"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "thresholds" },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "yellow", "value": 5 },
+                  { "color": "red", "value": 10 }
+                ]
+              },
+              "unit": "percent"
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 6, "w": 4, "x": 8, "y": 0 },
+          "id": 3,
+          "options": {
+            "colorMode": "background",
+            "graphMode": "area",
+            "justifyMode": "center",
+            "reduceOptions": {
+              "calcs": ["lastNotNull"],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "value_and_name"
+          },
+          "targets": [
+            {
+              "expr": "100 * sum(rate(http_server_requests_seconds_count{job=\"spring-services\",status=~\"5..\"}[5m])) / sum(rate(http_server_requests_seconds_count{job=\"spring-services\"}[5m]))",
+              "legendFormat": "5xx Error Rate",
+              "refId": "A"
+            }
+          ],
+          "title": "Error Rate",
+          "type": "stat"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "thresholds" },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "yellow", "value": 300 },
+                  { "color": "red", "value": 500 }
+                ]
+              },
+              "unit": "ms"
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 6, "w": 4, "x": 12, "y": 0 },
+          "id": 4,
+          "options": {
+            "colorMode": "background",
+            "graphMode": "area",
+            "justifyMode": "center",
+            "reduceOptions": {
+              "calcs": ["lastNotNull"],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "value_and_name"
+          },
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{job=\"spring-services\"}[5m])) by (le)) * 1000",
+              "legendFormat": "p95 latency",
+              "refId": "A"
+            }
+          ],
+          "title": "p95 Latency",
+          "type": "stat"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "fieldConfig": {
             "defaults": {
               "color": { "mode": "palette-classic" },
@@ -229,11 +347,7 @@ data:
                 "drawStyle": "line",
                 "fillOpacity": 10,
                 "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
+                "hideFrom": { "legend": false, "tooltip": false, "viz": false },
                 "lineInterpolation": "linear",
                 "lineWidth": 1,
                 "pointSize": 5,
@@ -244,43 +358,180 @@ data:
                 "thresholdsStyle": { "mode": "off" }
               },
               "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  { "color": "green", "value": null }
-                ]
-              }
+              "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null } ] },
+              "unit": "reqps"
             },
             "overrides": []
           },
-          "gridPos": { "h": 8, "w": 12, "x": 6, "y": 0 },
-          "id": 2,
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+          "id": 5,
           "options": {
             "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true },
             "tooltip": { "mode": "single", "sort": "none" }
           },
           "targets": [
             {
-              "expr": "sum(rate(prometheus_tsdb_head_samples_appended_total[5m])) by (instance)",
+              "expr": "sum(rate(http_server_requests_seconds_count{job=\"spring-services\"}[5m])) by (instance)",
               "legendFormat": "{{instance}}",
               "refId": "A"
             }
           ],
-          "title": "Request Rate",
+          "title": "Request Rate by Service",
+          "type": "timeseries"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": { "type": "linear" },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": { "mode": "none" },
+                "thresholdsStyle": { "mode": "off" }
+              },
+              "mappings": [],
+              "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null } ] },
+              "unit": "ms"
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
+          "id": 6,
+          "options": {
+            "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true },
+            "tooltip": { "mode": "single", "sort": "none" }
+          },
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{job=\"spring-services\"}[5m])) by (le, instance)) * 1000",
+              "legendFormat": "{{instance}}",
+              "refId": "A"
+            }
+          ],
+          "title": "p95 Latency by Service",
+          "type": "timeseries"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": { "type": "linear" },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": { "mode": "none" },
+                "thresholdsStyle": { "mode": "off" }
+              },
+              "mappings": [],
+              "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null } ] },
+              "unit": "percent"
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 14 },
+          "id": 7,
+          "options": {
+            "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true },
+            "tooltip": { "mode": "single", "sort": "none" }
+          },
+          "targets": [
+            {
+              "expr": "100 * sum(rate(http_server_requests_seconds_count{job=\"spring-services\",status=~\"5..\"}[5m])) by (instance) / sum(rate(http_server_requests_seconds_count{job=\"spring-services\"}[5m])) by (instance)",
+              "legendFormat": "{{instance}}",
+              "refId": "A"
+            }
+          ],
+          "title": "5xx Error Rate by Service",
+          "type": "timeseries"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": { "type": "linear" },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": { "mode": "none" },
+                "thresholdsStyle": { "mode": "off" }
+              },
+              "mappings": [],
+              "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null } ] },
+              "unit": "percent"
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 14 },
+          "id": 8,
+          "options": {
+            "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true },
+            "tooltip": { "mode": "single", "sort": "none" }
+          },
+          "targets": [
+            {
+              "expr": "100 * sum(jvm_memory_used_bytes{job=\"spring-services\"}) by (instance) / sum(jvm_memory_max_bytes{job=\"spring-services\"}) by (instance)",
+              "legendFormat": "{{instance}}",
+              "refId": "A"
+            }
+          ],
+          "title": "JVM Heap Usage %",
           "type": "timeseries"
         }
       ],
       "refresh": "10s",
       "schemaVersion": 39,
       "style": "dark",
-      "tags": ["banking"],
+      "tags": ["banking", "observability"],
       "templating": { "list": [] },
-      "time": { "from": "now-15m", "to": "now" },
+      "time": { "from": "now-30m", "to": "now" },
       "timepicker": {},
       "timezone": "browser",
       "title": "Banking Overview",
       "uid": "banking-overview",
-      "version": 1,
+      "version": 2,
       "weekStart": ""
     }
 ---
