@@ -17,15 +17,15 @@ resources:
   - observability.yaml
 
 images:
-  - name: nikitamathe/account-service
+  - name: 340529311540.dkr.ecr.us-east-1.amazonaws.com/account-service
     newTag: latest
-  - name: nikitamathe/auth-service
+  - name: 340529311540.dkr.ecr.us-east-1.amazonaws.com/auth-service
     newTag: latest
-  - name: nikitamathe/transaction-service
+  - name: 340529311540.dkr.ecr.us-east-1.amazonaws.com/transaction-service
     newTag: latest
-  - name: nikitamathe/notification-service
+  - name: 340529311540.dkr.ecr.us-east-1.amazonaws.com/notification-service
     newTag: latest
-  - name: nikitamathe/api-gateway
+  - name: 340529311540.dkr.ecr.us-east-1.amazonaws.com/api-gateway
     newTag: latest
-  - name: nikitamathe/frontend
+  - name: 340529311540.dkr.ecr.us-east-1.amazonaws.com/frontend
     newTag: latest

@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: api-gateway
-          image: nikitamathe/api-gateway:latest
+          image: 340529311540.dkr.ecr.us-east-1.amazonaws.com/api-gateway:latest
           ports:
             - containerPort: 8085
           env:

@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: transaction-service
-          image: nikitamathe/transaction-service:latest
+          image: 340529311540.dkr.ecr.us-east-1.amazonaws.com/transaction-service:latest
           ports:
             - containerPort: 8083
           env:

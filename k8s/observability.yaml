@@ -543,14 +543,13 @@ metadata:
   labels:
     app: grafana
 spec:
-  type: NodePort
+  type: LoadBalancer
   selector:
     app: grafana
   ports:
     - name: web
       port: 3000
       targetPort: 3000
-      nodePort: 30080
 ---
 apiVersion: apps/v1
 kind: Deployment

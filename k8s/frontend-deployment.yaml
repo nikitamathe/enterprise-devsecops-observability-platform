@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: nikitamathe/frontend:latest
+          image: 340529311540.dkr.ecr.us-east-1.amazonaws.com/frontend:latest
           ports:
             - containerPort: 80
           volumeMounts:

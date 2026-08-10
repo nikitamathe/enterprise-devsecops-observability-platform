@@ -2,8 +2,11 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_TAG = "${env.BUILD_NUMBER}"
-        CACHE_DAYS = '5'
+        IMAGE_TAG    = "${env.BUILD_NUMBER}"
+        CACHE_DAYS   = '5'
+        AWS_REGION   = 'us-east-1'
+        AWS_ACCOUNT_ID = '340529311540'
+        ECR_REGISTRY = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
     }
 
     stages {
@@ -208,7 +211,7 @@ PY
                         fi
                     }
 
-                    ensure_image_available nikitamathe/grype-with-db
+                    ensure_image_available ${ECR_REGISTRY}/grype-with-db:latest
 
                     mkdir -p reports
 
@@ -216,7 +219,7 @@ PY
                     docker run --rm \
                       -v "$WORKSPACE:/src" \
                       -v "$WORKSPACE/reports:/reports" \
-                      nikitamathe/grype-with-db \
+                      ${ECR_REGISTRY}/grype-with-db:latest \
                       dir:/src \
                       -o json > reports/grype-report.json 2> reports/grype-report.log
                     grype_exit=$?
@@ -349,17 +352,16 @@ PY
             }
         }
 
-        stage('Login to Docker Hub') {
+        stage('Login to ECR') {
             steps {
                 withCredentials([
-                    usernamePassword(
-                        credentialsId: 'dockerhub_nikitamathe',
-                        usernameVariable: 'DOCKERHUB_USER',
-                        passwordVariable: 'DOCKERHUB_PASS'
-                    )
+                    string(credentialsId: 'aws-access-key-id',     variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY')
                 ]) {
                     sh '''
-                        echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USER" --password-stdin
+                        aws ecr get-login-password \
+                            --region ${AWS_REGION} | \
+                            docker login --username AWS --password-stdin ${ECR_REGISTRY}
                     '''
                 }
             }
@@ -368,45 +370,35 @@ PY
         stage('Push Docker Images') {
             steps {
                 withCredentials([
-                    usernamePassword(
-                        credentialsId: 'dockerhub_nikitamathe',
-                        usernameVariable: 'DOCKERHUB_USER',
-                        passwordVariable: 'DOCKERHUB_PASS'
-                    )
+                    string(credentialsId: 'aws-access-key-id',     variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY')
                 ]) {
                     sh """
                         services="auth-service account-service transaction-service notification-service api-gateway frontend"
 
                         for svc in \$services; do
-                            echo "Pushing \$svc..."
+                            echo "Tagging and pushing \$svc to ECR..."
 
-                            # Ensure the image is available under the Docker Hub namespace before pushing
-                            if docker image inspect \$DOCKERHUB_USER/\$svc:${IMAGE_TAG} >/dev/null 2>&1; then
-                                echo "Found \$DOCKERHUB_USER/\$svc:${IMAGE_TAG}"
+                            # Tag with build number
+                            if docker image inspect \$svc:${IMAGE_TAG} >/dev/null 2>&1; then
+                                docker tag \$svc:${IMAGE_TAG} ${ECR_REGISTRY}/\$svc:${IMAGE_TAG}
+                            elif docker image inspect edop/\$svc:${IMAGE_TAG} >/dev/null 2>&1; then
+                                docker tag edop/\$svc:${IMAGE_TAG} ${ECR_REGISTRY}/\$svc:${IMAGE_TAG}
                             else
-                                if docker image inspect \$svc:${IMAGE_TAG} >/dev/null 2>&1; then
-                                    docker tag \$svc:${IMAGE_TAG} \$DOCKERHUB_USER/\$svc:${IMAGE_TAG}
-                                elif docker image inspect edop/\$svc:${IMAGE_TAG} >/dev/null 2>&1; then
-                                    docker tag edop/\$svc:${IMAGE_TAG} \$DOCKERHUB_USER/\$svc:${IMAGE_TAG}
-                                else
-                                    echo "Warning: no local image found for ${IMAGE_TAG} of \$svc"
-                                fi
+                                echo "Warning: no local image found for ${IMAGE_TAG} of \$svc"
                             fi
 
-                            if docker image inspect \$DOCKERHUB_USER/\$svc:latest >/dev/null 2>&1; then
-                                echo "Found \$DOCKERHUB_USER/\$svc:latest"
+                            # Tag as latest
+                            if docker image inspect \$svc:latest >/dev/null 2>&1; then
+                                docker tag \$svc:latest ${ECR_REGISTRY}/\$svc:latest
+                            elif docker image inspect edop/\$svc:latest >/dev/null 2>&1; then
+                                docker tag edop/\$svc:latest ${ECR_REGISTRY}/\$svc:latest
                             else
-                                if docker image inspect \$svc:latest >/dev/null 2>&1; then
-                                    docker tag \$svc:latest \$DOCKERHUB_USER/\$svc:latest
-                                elif docker image inspect edop/\$svc:latest >/dev/null 2>&1; then
-                                    docker tag edop/\$svc:latest \$DOCKERHUB_USER/\$svc:latest
-                                else
-                                    echo "Warning: no local image found for latest of \$svc"
-                                fi
+                                echo "Warning: no local image found for latest of \$svc"
                             fi
 
-                            docker push \$DOCKERHUB_USER/\$svc:${IMAGE_TAG} || true
-                            docker push \$DOCKERHUB_USER/\$svc:latest || true
+                            docker push ${ECR_REGISTRY}/\$svc:${IMAGE_TAG} || true
+                            docker push ${ECR_REGISTRY}/\$svc:latest || true
                         done
                     """
                 }
@@ -416,7 +408,7 @@ PY
 
     post {
         always {
-            sh 'docker logout || true'
+            sh 'docker logout ${ECR_REGISTRY} || true'
         }
 
         success {
