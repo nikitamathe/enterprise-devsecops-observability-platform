@@ -4,6 +4,7 @@ import com.banking.account.dto.AccountResponse;
 import com.banking.account.dto.BalanceUpdateRequest;
 import com.banking.account.dto.CreateAccountRequest;
 import com.banking.account.exception.AccountNotFoundException;
+import com.banking.account.exception.InactiveAccountException;
 import com.banking.account.exception.InsufficientFundsException;
 import com.banking.account.model.Account;
 import com.banking.account.repository.AccountRepository;
@@ -81,7 +82,7 @@ public class AccountService {
                 .orElseThrow(() -> new AccountNotFoundException("Account not found: " + accountNumber));
 
         if (account.getStatus() != Account.AccountStatus.ACTIVE) {
-            throw new RuntimeException("Account is not active: " + accountNumber);
+            throw new InactiveAccountException("Account is not active: " + accountNumber);
         }
 
         if (request.getOperationType() == BalanceUpdateRequest.OperationType.DEBIT) {

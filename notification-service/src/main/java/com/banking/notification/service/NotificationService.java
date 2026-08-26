@@ -2,6 +2,8 @@ package com.banking.notification.service;
 
 import com.banking.notification.dto.NotificationRequest;
 import com.banking.notification.dto.NotificationResponse;
+import com.banking.notification.exception.ForbiddenException;
+import com.banking.notification.exception.ResourceNotFoundException;
 import com.banking.notification.model.Notification;
 import com.banking.notification.repository.NotificationRepository;
 import lombok.RequiredArgsConstructor;
@@ -66,10 +68,10 @@ public class NotificationService {
     @Transactional
     public void markAsRead(Long notificationId, Long userId) {
         Notification notification = notificationRepository.findById(notificationId)
-                .orElseThrow(() -> new RuntimeException("Notification not found: " + notificationId));
+                .orElseThrow(() -> new ResourceNotFoundException("Notification not found: " + notificationId));
 
         if (!notification.getUserId().equals(userId)) {
-            throw new RuntimeException("Notification does not belong to user");
+            throw new ForbiddenException("Notification does not belong to user");
         }
 
         notification.setRead(true);
