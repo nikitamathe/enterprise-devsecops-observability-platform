@@ -9,8 +9,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -65,12 +63,5 @@ public class AccountController {
             @PathVariable Long accountId) {
         AccountResponse account = accountService.closeAccount(accountId);
         return ResponseEntity.ok(ApiResponse.success("Account closed", account));
-    }
-
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<ApiResponse<List<AccountResponse>>> getAccountsByUserId(
-            @PathVariable Long userId) {
-        List<AccountResponse> accounts = accountService.getAccountsByUserId(userId);
-        return ResponseEntity.ok(ApiResponse.success("Accounts retrieved", accounts));
     }
 }
