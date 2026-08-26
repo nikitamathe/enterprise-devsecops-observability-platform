@@ -292,7 +292,7 @@ public class TransactionService {
     }
 
     private String generateReference() {
-        return "TXN" + System.currentTimeMillis() + new Random().nextInt(1000);
+        return "TXN" + UUID.randomUUID();
     }
 
     private TransactionResponse mapToResponse(Transaction txn) {
