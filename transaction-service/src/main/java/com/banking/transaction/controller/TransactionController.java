@@ -3,6 +3,7 @@ package com.banking.transaction.controller;
 import com.banking.transaction.dto.ApiResponse;
 import com.banking.transaction.dto.TransactionRequest;
 import com.banking.transaction.dto.TransactionResponse;
+import com.banking.transaction.exception.TransactionException;
 import com.banking.transaction.service.TransactionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -80,6 +81,9 @@ public class TransactionController {
             @RequestHeader("X-User-Id") Long userId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to) {
+        if (!from.isBefore(to)) {
+            throw new TransactionException("'from' must be before 'to'");
+        }
         List<TransactionResponse> transactions =
                 transactionService.getTransactionsByUserIdAndDateRange(userId, from, to);
         return ResponseEntity.ok(ApiResponse.success("Transaction history retrieved", transactions));
