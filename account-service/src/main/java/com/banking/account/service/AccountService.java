@@ -19,9 +19,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
+import java.security.SecureRandom;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.stream.Collectors;
 
 @Service
@@ -136,11 +136,12 @@ public class AccountService {
         }
     }
 
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
     private String generateAccountNumber() {
-        Random random = new Random();
         StringBuilder sb = new StringBuilder("ACC");
         for (int i = 0; i < 12; i++) {
-            sb.append(random.nextInt(10));
+            sb.append(SECURE_RANDOM.nextInt(10));
         }
         return sb.toString();
     }
