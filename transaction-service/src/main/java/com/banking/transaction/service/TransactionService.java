@@ -300,7 +300,7 @@ public class TransactionService {
     }
 
     private TransactionResponse mapToResponse(Transaction txn, BigDecimal balanceBefore, BigDecimal balanceAfter,
-                                              BigDecimal amount) {
+                                               BigDecimal amount) {
         return TransactionResponse.builder()
                 .id(txn.getId())
                 .transactionReference(txn.getTransactionReference())
@@ -316,18 +316,5 @@ public class TransactionService {
                 .failureReason(txn.getFailureReason())
                 .createdAt(txn.getCreatedAt())
                 .build();
-    }
-
-    private BigDecimal calculateSignedAmount(Transaction txn, String accountNumber) {
-        return switch (txn.getTransactionType()) {
-            case DEPOSIT -> txn.getAmount();
-            case WITHDRAWAL -> txn.getAmount().negate();
-            case TRANSFER -> {
-                if (accountNumber.equals(txn.getFromAccountNumber())) {
-                    yield txn.getAmount().negate();
-                }
-                yield txn.getAmount();
-            }
-        };
     }
 }
