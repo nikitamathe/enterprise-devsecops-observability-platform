@@ -1,0 +1,6 @@
+# Trivy ignore policy — documented exceptions only
+# Format: CVE-YYYY-NNNNN (one per line)
+# Each entry MUST have a comment explaining why it's ignored and when to re-evaluate.
+
+# Example (uncomment when needed):
+# CVE-2024-12345 — False positive in base image, fixed upstream, re-evaluate 2026-Q2
