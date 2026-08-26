@@ -88,6 +88,8 @@ spec:
               value: "notification-service"
             - name: NOTIFICATION_SERVICE_PORT
               value: "8084"
+            - name: REDIS_HOST
+              value: "redis"
           volumeMounts:
             - name: gateway-config
               mountPath: /app/config/application.yml

@@ -52,6 +52,7 @@ spec:
         - port: 8082
         - port: 8083
         - port: 8084
+        - port: 6379
 ---
 # Auth Service: allow ingress from gateway only, egress to MySQL
 apiVersion: networking.k8s.io/v1
@@ -287,4 +288,26 @@ spec:
     - ports:
         - port: 4318
         - port: 3200
+  egress: []
+---
+# Redis: allow ingress from api-gateway only
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-redis
+  namespace: banking
+spec:
+  podSelector:
+    matchLabels:
+      app: redis
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: api-gateway
+      ports:
+        - port: 6379
   egress: []

@@ -8,6 +8,7 @@ resources:
   - jwt-secret.yaml
   - grafana-secret.yaml
   - mysql-statefulset.yaml
+  - redis-deployment.yaml
   - account-deployment.yaml
   - auth-deployment.yaml
   - transaction-deployment.yaml

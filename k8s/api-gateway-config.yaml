@@ -11,10 +11,21 @@ data:
     spring:
       application:
         name: api-gateway
+      data:
+        redis:
+          host: ${REDIS_HOST:redis}
+          port: ${REDIS_PORT:6379}
       cloud:
         compatibility-verifier:
           enabled: false
         gateway:
+          default-filters:
+            - name: RequestRateLimiter
+              args:
+                key-resolver: "#{@ipKeyResolver}"
+                redis-rate-limiter.replenish-rate: 2
+                redis-rate-limiter.burst-capacity: 20
+                redis-rate-limiter.requested-tokens: 1
           globalcors:
             cors-configurations:
               '[/**]':

@@ -141,6 +141,19 @@ services:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8084/actuator/health | grep -q UP"]
       <<: *hc-defaults
 
+  # ── Redis ──────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: banking-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - banking-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      <<: *hc-defaults
+
   # ── API Gateway ────────────────────────────────────────────────────────────
   api-gateway:
     image: api-gateway:latest
@@ -151,11 +164,14 @@ services:
     restart: unless-stopped
     environment:
       <<: [*jwt-env, *service-hosts]
+      REDIS_HOST: redis
     ports:
       - "8085:8085"
     networks:
       - banking-net
     depends_on:
+      redis:
+        condition: service_healthy
       auth-service:
         condition: service_healthy
       account-service:
