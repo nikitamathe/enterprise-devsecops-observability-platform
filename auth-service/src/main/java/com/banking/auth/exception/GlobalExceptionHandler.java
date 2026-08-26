@@ -18,6 +18,36 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<ApiException> handleConflict(ConflictException ex) {
+        ApiException error = new ApiException(
+                HttpStatus.CONFLICT.value(),
+                ex.getMessage(),
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ApiException> handleNotFound(ResourceNotFoundException ex) {
+        ApiException error = new ApiException(
+                HttpStatus.NOT_FOUND.value(),
+                ex.getMessage(),
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<ApiException> handleUnauthorized(UnauthorizedException ex) {
+        ApiException error = new ApiException(
+                HttpStatus.UNAUTHORIZED.value(),
+                ex.getMessage(),
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    }
+
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ApiException> handleRuntimeException(RuntimeException ex) {
         ApiException error = new ApiException(

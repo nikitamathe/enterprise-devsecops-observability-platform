@@ -1,6 +1,9 @@
 package com.banking.auth.service;
 
 import com.banking.auth.dto.*;
+import com.banking.auth.exception.ConflictException;
+import com.banking.auth.exception.ResourceNotFoundException;
+import com.banking.auth.exception.UnauthorizedException;
 import com.banking.auth.model.User;
 import com.banking.auth.repository.UserRepository;
 import com.banking.auth.security.JwtService;
@@ -28,10 +31,10 @@ public class AuthService {
     @Transactional
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByUsername(request.getUsername())) {
-            throw new RuntimeException("Username already exists: " + request.getUsername());
+            throw new ConflictException("Username already exists");
         }
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already registered: " + request.getEmail());
+            throw new ConflictException("Email already registered");
         }
 
         User user = User.builder()
@@ -69,7 +72,7 @@ public class AuthService {
         );
 
         User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Invalid credentials"));
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(user.getUsername());
         String accessToken = jwtService.generateToken(userDetails, user.getId());
@@ -93,11 +96,11 @@ public class AuthService {
         UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
         if (!jwtService.isTokenValid(request.getRefreshToken(), userDetails)) {
-            throw new RuntimeException("Invalid refresh token");
+            throw new UnauthorizedException("Invalid refresh token");
         }
 
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         String newAccessToken = jwtService.generateToken(userDetails, user.getId());
 
@@ -114,7 +117,7 @@ public class AuthService {
 
     public UserResponse getUserByUsername(String username) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found: " + username));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         return UserResponse.builder()
                 .id(user.getId())
