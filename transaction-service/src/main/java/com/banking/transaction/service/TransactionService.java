@@ -1,6 +1,5 @@
 package com.banking.transaction.service;
 
-import com.banking.common.dto.ApiResponse;
 import com.banking.transaction.dto.TransactionRequest;
 import com.banking.transaction.dto.TransactionResponse;
 import com.banking.transaction.exception.TransactionException;
@@ -9,7 +8,6 @@ import com.banking.transaction.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -30,6 +28,7 @@ public class TransactionService {
 
     private final TransactionRepository transactionRepository;
     private final RestTemplate restTemplate;
+    private final AccountCacheService accountCacheService;
 
     @Value("${services.account-service}")
     private String accountServiceUrl;
@@ -202,22 +201,7 @@ public class TransactionService {
     // ----------------------------------------------------------------
     @SuppressWarnings("unchecked")
     private Map<String, Object> fetchAccount(String accountNumber) {
-        try {
-            ResponseEntity<ApiResponse<Map<String, Object>>> response = restTemplate.exchange(
-                    accountServiceUrl + "/api/accounts/number/" + accountNumber,
-                    HttpMethod.GET,
-                    null,
-                    new ParameterizedTypeReference<>() {}
-            );
-            if (response.getBody() != null && response.getBody().isSuccess()) {
-                return (Map<String, Object>) response.getBody().getData();
-            }
-            throw new TransactionException("Account not found: " + accountNumber);
-        } catch (TransactionException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new TransactionException("Could not reach account service: " + e.getMessage());
-        }
+        return accountCacheService.fetchAccount(accountNumber, accountServiceUrl);
     }
 
     @SuppressWarnings("unchecked")
