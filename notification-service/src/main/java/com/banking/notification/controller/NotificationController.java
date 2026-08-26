@@ -4,6 +4,7 @@ import com.banking.notification.dto.ApiResponse;
 import com.banking.notification.dto.NotificationRequest;
 import com.banking.notification.dto.NotificationResponse;
 import com.banking.notification.service.NotificationService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
@@ -26,7 +27,7 @@ public class NotificationController {
      */
     @PostMapping("/internal")
     public ResponseEntity<ApiResponse<NotificationResponse>> receiveInternal(
-            @RequestBody NotificationRequest request) {
+            @Valid @RequestBody NotificationRequest request) {
         NotificationResponse notification = notificationService.createNotification(request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Notification created", notification));
