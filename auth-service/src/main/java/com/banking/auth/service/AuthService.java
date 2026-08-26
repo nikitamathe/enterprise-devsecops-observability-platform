@@ -10,12 +10,15 @@ import com.banking.common.security.JwtService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -66,19 +69,42 @@ public class AuthService {
                 .build();
     }
 
-    public AuthResponse login(LoginRequest request) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
-        );
+    private static final int MAX_FAILED_ATTEMPTS = 5;
+    private static final int LOCKOUT_MINUTES = 30;
 
+    public AuthResponse login(LoginRequest request) {
         User user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new ResourceNotFoundException("Invalid credentials"));
+
+        if (user.isAccountLocked()) {
+            log.warn("Locked account login attempt: {}", user.getUsername());
+            throw new org.springframework.security.authentication.LockedException(
+                    "Account is locked. Try again after " + LOCKOUT_MINUTES + " minutes.");
+        }
+
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
+            );
+        } catch (BadCredentialsException e) {
+            user.setFailedLoginAttempts(user.getFailedLoginAttempts() + 1);
+            if (user.getFailedLoginAttempts() >= MAX_FAILED_ATTEMPTS) {
+                user.setLockoutTime(LocalDateTime.now());
+                log.warn("Account locked after {} failed attempts: {}", MAX_FAILED_ATTEMPTS, user.getUsername());
+            }
+            userRepository.save(user);
+            throw e;
+        }
+
+        user.setFailedLoginAttempts(0);
+        user.setLockoutTime(null);
+        userRepository.save(user);
+
+        log.info("User logged in: {}", user.getUsername());
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(user.getUsername());
         String accessToken = jwtService.generateToken(userDetails, user.getId());
         String refreshToken = jwtService.generateRefreshToken(userDetails);
-
-        log.info("User logged in: {}", user.getUsername());
 
         return AuthResponse.builder()
                 .accessToken(accessToken)

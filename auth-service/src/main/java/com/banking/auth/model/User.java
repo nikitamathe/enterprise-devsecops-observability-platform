@@ -41,6 +41,12 @@ public class User {
     @Column(nullable = false)
     private boolean enabled = true;
 
+    @Column(name = "failed_login_attempts", nullable = false)
+    private int failedLoginAttempts = 0;
+
+    @Column(name = "lockout_time")
+    private LocalDateTime lockoutTime;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -56,6 +62,10 @@ public class User {
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
+    }
+
+    public boolean isAccountLocked() {
+        return lockoutTime != null && lockoutTime.plusMinutes(30).isAfter(LocalDateTime.now());
     }
 
     public enum Role {
