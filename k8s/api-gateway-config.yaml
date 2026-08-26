@@ -18,18 +18,8 @@ data:
           globalcors:
             cors-configurations:
               '[/**]':
-                allowedOriginPatterns:
-                  - "http://localhost:*"
-                  - "http://127.0.0.1:*"
-                  - "http://*"
-                  - "https://*"
-                  - "http://3.239.238.163:*"
                 allowedOrigins:
-                  - "http://localhost:5173"
-                  - "http://localhost:80"
-                  - "http://localhost"
-                  - "http://3.239.238.163:31975"
-                  - "http://3.239.238.163"
+                  - "https://banking.yourdomain.com"
                 allowedMethods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
                 allowedHeaders: "*"
                 allowCredentials: true

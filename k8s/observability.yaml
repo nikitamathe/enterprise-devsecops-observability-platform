@@ -91,21 +91,41 @@ spec:
         prometheus.io/port: "9090"
     spec:
       serviceAccountName: prometheus
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        fsGroup: 65534
       containers:
         - name: prometheus
           image: prom/prometheus:v2.54.1
           args:
             - --config.file=/etc/prometheus/prometheus.yml
             - --storage.tsdb.path=/prometheus
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 2Gi
           ports:
             - containerPort: 9090
           volumeMounts:
             - name: config
               mountPath: /etc/prometheus
+            - name: prometheus-data
+              mountPath: /prometheus
       volumes:
         - name: config
           configMap:
             name: prometheus-config
+        - name: prometheus-data
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -543,7 +563,7 @@ metadata:
   labels:
     app: grafana
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: grafana
   ports:
@@ -566,21 +586,47 @@ spec:
       labels:
         app: grafana
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 472
+        fsGroup: 472
       containers:
         - name: grafana
           image: grafana/grafana:11.2.0
           ports:
             - containerPort: 3000
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
           env:
             - name: GF_SECURITY_ADMIN_USER
-              value: admin
+              valueFrom:
+                secretKeyRef:
+                  name: grafana-secret
+                  key: admin-user
             - name: GF_SECURITY_ADMIN_PASSWORD
-              value: admin
+              valueFrom:
+                secretKeyRef:
+                  name: grafana-secret
+                  key: admin-password
           volumeMounts:
             - name: grafana-datasources
               mountPath: /etc/grafana/provisioning/datasources
             - name: grafana-dashboards
               mountPath: /etc/grafana/provisioning/dashboards
+            - name: grafana-data
+              mountPath: /var/lib/grafana
+            - name: tmp
+              mountPath: /tmp
       volumes:
         - name: grafana-datasources
           configMap:
@@ -588,6 +634,10 @@ spec:
         - name: grafana-dashboards
           configMap:
             name: grafana-dashboards
+        - name: grafana-data
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
@@ -622,11 +672,27 @@ spec:
       labels:
         app: tempo
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        fsGroup: 10001
       containers:
         - name: tempo
           image: grafana/tempo:2.6.0
           args:
             - -config.file=/etc/tempo.yaml
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
           ports:
             - containerPort: 3200
             - containerPort: 4318
@@ -634,10 +700,14 @@ spec:
             - name: tempo-config
               mountPath: /etc/tempo.yaml
               subPath: tempo.yaml
+            - name: tmp
+              mountPath: /tmp
       volumes:
         - name: tempo-config
           configMap:
             name: tempo-config
+        - name: tmp
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: ConfigMap

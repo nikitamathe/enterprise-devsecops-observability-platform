@@ -5,6 +5,8 @@ namespace: banking
 resources:
   - namespace.yaml
   - mysql-secret.yaml
+  - jwt-secret.yaml
+  - grafana-secret.yaml
   - mysql-statefulset.yaml
   - account-deployment.yaml
   - auth-deployment.yaml
@@ -15,6 +17,11 @@ resources:
   - frontend-deployment.yaml
   - frontend-nginx-config.yaml
   - observability.yaml
+  - network-policies.yaml
+  - ingress.yaml
+  - hpa.yaml
+  - pdb.yaml
+  - resource-quotas.yaml
 
 images:
   - name: 340529311540.dkr.ecr.us-east-1.amazonaws.com/account-service
