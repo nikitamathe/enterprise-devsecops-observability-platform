@@ -11,7 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.*;
@@ -179,13 +178,8 @@ public class TransactionService {
     }
 
     public Page<TransactionResponse> getTransactionsByAccount(String accountNumber, int page, int size) {
-        Page<Transaction> transactionPage = transactionRepository.findByAccountNumber(accountNumber, PageRequest.of(page, size));
-        List<TransactionResponse> responses = transactionPage.getContent()
-                .stream()
-                .map(this::mapToResponse)
-                .toList();
-
-        return new PageImpl<>(responses, transactionPage.getPageable(), transactionPage.getTotalElements());
+        return transactionRepository.findByAccountNumber(accountNumber, PageRequest.of(page, size))
+                .map(this::mapToResponse);
     }
 
     public TransactionResponse getTransactionByReference(String reference) {
