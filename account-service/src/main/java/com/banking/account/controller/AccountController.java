@@ -1,7 +1,7 @@
 package com.banking.account.controller;
 
 import com.banking.account.dto.AccountResponse;
-import com.banking.account.dto.ApiResponse;
+import com.banking.common.dto.ApiResponse;
 import com.banking.account.dto.BalanceUpdateRequest;
 import com.banking.account.dto.CreateAccountRequest;
 import com.banking.account.service.AccountService;

@@ -1,6 +1,6 @@
 package com.banking.transaction.exception;
 
-import com.banking.transaction.dto.ApiResponse;
+import com.banking.common.dto.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;

@@ -1,10 +1,9 @@
-package com.banking.auth.security;
+package com.banking.common.security;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
@@ -19,14 +18,18 @@ public class JwtService {
     @Value("${jwt.secret}")
     private String secretKey;
 
-    @Value("${jwt.expiration}")
+    @Value("${jwt.expiration:86400000}")
     private long jwtExpiration;
 
-    @Value("${jwt.refresh-expiration}")
+    @Value("${jwt.refresh-expiration:604800000}")
     private long refreshExpiration;
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
+    }
+
+    public Long extractUserId(String token) {
+        return extractClaim(token, claims -> claims.get("userId", Long.class));
     }
 
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
@@ -34,26 +37,42 @@ public class JwtService {
         return claimsResolver.apply(claims);
     }
 
-    public String generateToken(UserDetails userDetails) {
+    public String generateToken(org.springframework.security.core.userdetails.UserDetails userDetails) {
         return generateToken(new HashMap<>(), userDetails);
     }
 
-    public String generateToken(Map<String, Object> extraClaims, UserDetails userDetails) {
+    public String generateToken(Map<String, Object> extraClaims,
+                                org.springframework.security.core.userdetails.UserDetails userDetails) {
         return buildToken(extraClaims, userDetails, jwtExpiration);
     }
 
-    /** Convenience method that embeds userId as a claim so the API Gateway can forward it. */
-    public String generateToken(UserDetails userDetails, Long userId) {
+    public String generateToken(org.springframework.security.core.userdetails.UserDetails userDetails, Long userId) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", userId);
         return buildToken(claims, userDetails, jwtExpiration);
     }
 
-    public String generateRefreshToken(UserDetails userDetails) {
+    public String generateRefreshToken(org.springframework.security.core.userdetails.UserDetails userDetails) {
         return buildToken(new HashMap<>(), userDetails, refreshExpiration);
     }
 
-    private String buildToken(Map<String, Object> extraClaims, UserDetails userDetails, long expiration) {
+    public boolean isTokenValid(String token,
+                                org.springframework.security.core.userdetails.UserDetails userDetails) {
+        final String username = extractUsername(token);
+        return username.equals(userDetails.getUsername()) && !isTokenExpired(token);
+    }
+
+    public boolean isTokenValid(String token) {
+        try {
+            return !isTokenExpired(token);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private String buildToken(Map<String, Object> extraClaims,
+                              org.springframework.security.core.userdetails.UserDetails userDetails,
+                              long expiration) {
         return Jwts.builder()
                 .claims(extraClaims)
                 .subject(userDetails.getUsername())
@@ -63,12 +82,7 @@ public class JwtService {
                 .compact();
     }
 
-    public boolean isTokenValid(String token, UserDetails userDetails) {
-        final String username = extractUsername(token);
-        return username.equals(userDetails.getUsername()) && !isTokenExpired(token);
-    }
-
-    private boolean isTokenExpired(String token) {
+    public boolean isTokenExpired(String token) {
         return extractExpiration(token).before(new Date());
     }
 

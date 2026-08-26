@@ -1,6 +1,6 @@
 package com.banking.notification.controller;
 
-import com.banking.notification.dto.ApiResponse;
+import com.banking.common.dto.ApiResponse;
 import com.banking.notification.dto.NotificationRequest;
 import com.banking.notification.dto.NotificationResponse;
 import com.banking.notification.service.NotificationService;

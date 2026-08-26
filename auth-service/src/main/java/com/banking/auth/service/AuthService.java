@@ -6,7 +6,7 @@ import com.banking.auth.exception.ResourceNotFoundException;
 import com.banking.auth.exception.UnauthorizedException;
 import com.banking.auth.model.User;
 import com.banking.auth.repository.UserRepository;
-import com.banking.auth.security.JwtService;
+import com.banking.common.security.JwtService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;

@@ -5,68 +5,19 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.5.14</version>
-        <relativePath/>
+        <groupId>com.banking</groupId>
+        <artifactId>banking-parent</artifactId>
+        <version>1.0.0</version>
     </parent>
 
-    <groupId>com.banking</groupId>
     <artifactId>api-gateway</artifactId>
-    <version>1.0.0</version>
     <name>api-gateway</name>
 
-    <properties>
-        <java.version>21</java.version>
-        <spring-cloud.version>2024.0.3</spring-cloud.version>
-        <jjwt.version>0.12.5</jjwt.version>
-        <!-- Pin patched transitive versions until the Spring Boot BOM includes them. -->
-        <jackson-bom.version>2.18.8</jackson-bom.version>
-        <tomcat.version>10.1.55</tomcat.version>
-        <netty.version>4.1.136.Final</netty.version>
-        <bouncycastle.version>1.80.2</bouncycastle.version>
-    </properties>
-
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.springframework.cloud</groupId>
-                <artifactId>spring-cloud-dependencies</artifactId>
-                <version>${spring-cloud.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-core</artifactId>
-                <version>${jackson-bom.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-databind</artifactId>
-                <version>${jackson-bom.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.tomcat.embed</groupId>
-                <artifactId>tomcat-embed-core</artifactId>
-                <version>${tomcat.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-bom</artifactId>
-                <version>${netty.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.bouncycastle</groupId>
-                <artifactId>bcprov-jdk18on</artifactId>
-                <version>${bouncycastle.version}</version>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
-
     <dependencies>
+        <dependency>
+            <groupId>com.banking</groupId>
+            <artifactId>common-lib</artifactId>
+        </dependency>
         <!-- Spring Cloud Gateway uses WebFlux (reactive), NOT spring-boot-starter-web -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
@@ -88,12 +39,6 @@
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-exporter-otlp</artifactId>
         </dependency>
-        <!-- JWT for token validation in the auth filter -->
-        <dependency>
-            <groupId>io.jsonwebtoken</groupId>
-            <artifactId>jjwt-api</artifactId>
-            <version>${jjwt.version}</version>
-        </dependency>
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-impl</artifactId>
@@ -113,20 +58,4 @@
         </dependency>
     </dependencies>
 
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <excludes>
-                        <exclude>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok</artifactId>
-                        </exclude>
-                    </excludes>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
 </project>

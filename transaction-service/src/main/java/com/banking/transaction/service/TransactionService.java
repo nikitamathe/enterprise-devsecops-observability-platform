@@ -1,6 +1,6 @@
 package com.banking.transaction.service;
 
-import com.banking.transaction.dto.ApiResponse;
+import com.banking.common.dto.ApiResponse;
 import com.banking.transaction.dto.TransactionRequest;
 import com.banking.transaction.dto.TransactionResponse;
 import com.banking.transaction.exception.TransactionException;

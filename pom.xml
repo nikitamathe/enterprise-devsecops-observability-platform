@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.5.14</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>com.banking</groupId>
+    <artifactId>banking-parent</artifactId>
+    <version>1.0.0</version>
+    <packaging>pom</packaging>
+
+    <name>banking-parent</name>
+    <description>Enterprise DevSecOps Observability Platform - Parent POM</description>
+
+    <properties>
+        <java.version>21</java.version>
+        <jjwt.version>0.12.5</jjwt.version>
+        <spring-cloud.version>2024.0.3</spring-cloud.version>
+        <!-- Pin patched transitive versions until the Spring Boot BOM includes them. -->
+        <jackson-bom.version>2.18.8</jackson-bom.version>
+        <tomcat.version>10.1.55</tomcat.version>
+        <netty.version>4.1.136.Final</netty.version>
+        <bouncycastle.version>1.80.2</bouncycastle.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- Spring Cloud BOM -->
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- Shared library -->
+            <dependency>
+                <groupId>com.banking</groupId>
+                <artifactId>common-lib</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <!-- Pin transitive dependency versions -->
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-core</artifactId>
+                <version>${jackson-bom.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>${jackson-bom.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-core</artifactId>
+                <version>${tomcat.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-bom</artifactId>
+                <version>${netty.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcprov-jdk18on</artifactId>
+                <version>${bouncycastle.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-maven-plugin</artifactId>
+                    <configuration>
+                        <excludes>
+                            <exclude>
+                                <groupId>org.projectlombok</groupId>
+                                <artifactId>lombok</artifactId>
+                            </exclude>
+                        </excludes>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+
+    <modules>
+        <module>common-lib</module>
+        <module>auth-service</module>
+        <module>account-service</module>
+        <module>transaction-service</module>
+        <module>notification-service</module>
+        <module>api-gateway</module>
+    </modules>
+
+</project>
