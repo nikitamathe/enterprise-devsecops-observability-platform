@@ -1,5 +1,8 @@
 pipeline {
     agent any
+    options {
+        timeout(time: 30, unit: 'MINUTES')
+    }
 
     environment {
         IMAGE_TAG    = "${env.BUILD_NUMBER}"
@@ -55,6 +58,11 @@ pipeline {
                     set -e
 
                     echo "gitleaks_exit_code=$gitleaks_exit" > reports/gitleaks-status.txt
+
+                    if [ "$gitleaks_exit" -ne 0 ]; then
+                        echo "ERROR: Gitleaks detected secrets. Failing build."
+                        exit 1
+                    fi
                 '''
 
                 sh '''
@@ -110,13 +118,22 @@ PY
                 sh '''
                     echo "Running Semgrep SAST Scan..."
                     mkdir -p reports
-                    chmod 777 reports  # Prevent permission denied errors
+                    chmod 755 reports
                     
                     docker run --rm \
                     -v "$WORKSPACE:/src" \
                     -w /src \
                     returntocorp/semgrep:1.171.0-nonroot \
-                    semgrep scan --config auto --junit-xml -o reports/semgrep-report.xml . || true
+                    semgrep scan --config auto --junit-xml -o reports/semgrep-report.xml .
+
+                    # Fail if HIGH or CRITICAL findings exist
+                    if [ -f reports/semgrep-report.xml ]; then
+                        high_critical=$(grep -c 'severity="[HIGH\|CRITICAL]"' reports/semgrep-report.xml || true)
+                        if [ "$high_critical" -gt 0 ]; then
+                            echo "ERROR: Semgrep found $high_critical HIGH/CRITICAL findings. Failing build."
+                            exit 1
+                        fi
+                    fi
                 '''
             }
             post {
@@ -193,6 +210,14 @@ PY
                 }
             }
         }
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
         
         stage('Grype Filesystem Scan') {
             steps {
@@ -226,6 +251,23 @@ PY
                     set -e
 
                     echo "grype_exit_code=$grype_exit" > reports/grype-status.txt
+
+                    # Fail if HIGH or CRITICAL vulnerabilities found
+                    if [ -f reports/grype-report.json ]; then
+                        high_critical=$(python3 -c "
+import json, sys
+try:
+    data = json.load(open('reports/grype-report.json'))
+    matches = data.get('matches', []) if isinstance(data, dict) else data
+    count = sum(1 for m in matches if m.get('vulnerability', {}).get('severity', '') in ('High', 'Critical', 'HIGH', 'CRITICAL'))
+    print(count)
+except: print(0)
+" 2>/dev/null || echo 0)
+                        if [ "$high_critical" -gt 0 ]; then
+                            echo "ERROR: Grype found $high_critical HIGH/CRITICAL vulnerabilities. Failing build."
+                            exit 1
+                        fi
+                    fi
                 '''
 
                 sh '''
@@ -337,7 +379,7 @@ PY
 
                     for svc in $services; do
                         echo "Scanning $svc:${IMAGE_TAG}..."
-                        trivy image --severity HIGH,CRITICAL --format json -o reports/trivy-${svc}.json $svc:${IMAGE_TAG} || true
+                        trivy image --severity HIGH,CRITICAL --exit-code 1 --format json -o reports/trivy-${svc}.json $svc:${IMAGE_TAG}
                     done
                 '''
             }
