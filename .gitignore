@@ -57,3 +57,6 @@ hs_err_pid*
 replay_pid*
 semgrep-env/
 *.tar.gz
+
+# AI generated documentation
+ai-docs/
