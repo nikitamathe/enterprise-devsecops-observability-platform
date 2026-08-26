@@ -4,10 +4,13 @@ FROM maven:3.9.9-eclipse-temurin-21 AS builder
 WORKDIR /app
 
 COPY pom.xml .
-RUN mvn dependency:go-offline -q
+COPY common-lib/pom.xml common-lib/pom.xml
+COPY auth-service/pom.xml auth-service/pom.xml
+RUN mvn dependency:go-offline -pl auth-service -am -q
 
-COPY src ./src
-RUN mvn package -DskipTests -q
+COPY common-lib/src common-lib/src
+COPY auth-service/src auth-service/src
+RUN mvn verify -pl auth-service -am -q
 
 # ── Stage 2: Runtime ──────────────────────────────────────────────────────────
 FROM eclipse-temurin:21-jre-jammy AS runtime

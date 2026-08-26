@@ -4,10 +4,13 @@ FROM maven:3.9.9-eclipse-temurin-21 AS builder
 WORKDIR /app
 
 COPY pom.xml .
-RUN mvn dependency:go-offline -q
+COPY common-lib/pom.xml common-lib/pom.xml
+COPY transaction-service/pom.xml transaction-service/pom.xml
+RUN mvn dependency:go-offline -pl transaction-service -am -q
 
-COPY src ./src
-RUN mvn package -DskipTests -q
+COPY common-lib/src common-lib/src
+COPY transaction-service/src transaction-service/src
+RUN mvn verify -pl transaction-service -am -q
 
 # ── Stage 2: Runtime ──────────────────────────────────────────────────────────
 FROM eclipse-temurin:21-jre-jammy AS runtime
