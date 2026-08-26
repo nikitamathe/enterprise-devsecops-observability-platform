@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import { getErrorMessage } from '../lib/api'
 import toast from 'react-hot-toast'
 import { Landmark, Eye, EyeOff } from 'lucide-react'
 import Spinner from '../components/Spinner'
@@ -25,7 +26,7 @@ export default function LoginPage() {
       await login(form)
       toast.success('Welcome back!')
     } catch (err) {
-      toast.error(err.response?.data?.message ?? 'Invalid credentials')
+      toast.error(getErrorMessage(err, 'Invalid credentials'))
     } finally {
       setLoading(false)
     }

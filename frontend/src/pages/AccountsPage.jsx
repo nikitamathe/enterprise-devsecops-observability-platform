@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { accountApi } from '../lib/api'
+import { accountApi, getErrorMessage } from '../lib/api'
 import toast from 'react-hot-toast'
 import PageHeader from '../components/PageHeader'
 import Spinner from '../components/Spinner'
@@ -29,7 +29,7 @@ export default function AccountsPage() {
       setShowCreate(false)
       setForm({ accountHolderName: '', accountType: 'SAVINGS' })
     },
-    onError: (err) => toast.error(err.response?.data?.message ?? 'Failed to create account'),
+    onError: (err) => toast.error(getErrorMessage(err, 'Failed to create account')),
   })
 
   const handleCreate = (e) => {

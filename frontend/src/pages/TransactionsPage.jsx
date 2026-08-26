@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { transactionApi, accountApi } from '../lib/api'
+import { transactionApi, accountApi, getErrorMessage } from '../lib/api'
 import toast from 'react-hot-toast'
 import PageHeader from '../components/PageHeader'
 import Spinner from '../components/Spinner'
@@ -42,7 +42,7 @@ export default function TransactionsPage() {
       setShowModal(false)
       setForm({ accountNumber: '', fromAccountNumber: '', toAccountNumber: '', amount: '', description: '' })
     },
-    onError: (err) => toast.error(err.response?.data?.message ?? 'Transaction failed'),
+    onError: (err) => toast.error(getErrorMessage(err, 'Transaction failed')),
   })
 
   const handleSubmit = (e) => {

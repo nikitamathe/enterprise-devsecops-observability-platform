@@ -1,5 +1,9 @@
 import api from './axios'
 
+export function getErrorMessage(err, fallback = 'An unexpected error occurred') {
+  return err.response?.data?.message ?? fallback
+}
+
 // ─── Auth ────────────────────────────────────────────────────────────────────
 export const authApi = {
   login: (data) => api.post('/auth/login', data),
