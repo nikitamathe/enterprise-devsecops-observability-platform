@@ -5,10 +5,10 @@ x-db-env: &db-env
   DB_HOST: mysql
   DB_PORT: 3306
   DB_USER: root
-  DB_PASS: root
+  DB_PASS: ${DB_PASS:?Set DB_PASS in .env file}
 
 x-jwt-env: &jwt-env
-  JWT_SECRET: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+    JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env file}
 
 x-service-hosts: &service-hosts
   AUTH_SERVICE_HOST: auth-service
@@ -35,7 +35,7 @@ services:
     container_name: banking-mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: ${DB_PASS:?Set DB_PASS in .env file}
       MYSQL_DATABASE: banking_db
     ports:
       - "3306:3306"
@@ -44,7 +44,7 @@ services:
     networks:
       - banking-net
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${DB_PASS}"]
       <<: *hc-defaults
 
   # ── Auth Service ───────────────────────────────────────────────────────────
