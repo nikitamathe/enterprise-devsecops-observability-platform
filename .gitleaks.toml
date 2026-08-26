@@ -1,0 +1,41 @@
+# gitleaks configuration — allowlist known false positives
+
+[allowlist]
+  description = "Global allowlist for false positives"
+
+  # Spring property placeholders (not real secrets)
+  regexes = [
+    '''(?i)\$\{[A-Z_]+(:[^}]*)?\}''',
+    '''(?i)\$\{JWT_SECRET\}''',
+    '''(?i)\$\{DB_PASS\}''',
+  ]
+
+  paths = [
+    # Example/template files with placeholder secrets
+    '''\.env\.example$''',
+    '''\.env\.sample$''',
+
+    # K8s base64 secrets (rotated, not plaintext)
+    '''k8s/jwt-secret\.yaml$''',
+    '''k8s/grafana-secret\.yaml$''',
+    '''k8s/mysql-secret\.yaml$''',
+
+    # Test files
+    '''src/test/''',
+  ]
+
+  # Allowlist specific rules
+  [[allowlist.rules]]
+    id = "jwt-secret-placeholder"
+    description = "JWT secret placeholder in config"
+    regex = '''(?i)jwt[_-]?secret\s*[:=]\s*['"]?\$\{?JWT_SECRET'''
+
+  [[allowlist.rules]]
+    id = "db-pass-placeholder"
+    description = "DB password placeholder in config"
+    regex = '''(?i)(db[_-]?pass|password)\s*[:=]\s*['"]?\$\{?DB_PASS'''
+
+  [[allowlist.rules]]
+    id = "grafana-admin-placeholder"
+    description = "Grafana admin password placeholder"
+    regex = '''(?i)GF_SECURITY_ADMIN_PASSWORD\s*[:=]\s*['"]?\$\{?GF_SECURITY_ADMIN_PASSWORD'''
