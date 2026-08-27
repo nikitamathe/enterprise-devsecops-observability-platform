@@ -4,9 +4,7 @@ namespace: banking
 
 resources:
   - namespace.yaml
-  - mysql-secret.yaml
-  - jwt-secret.yaml
-  - grafana-secret.yaml
+  - external-secret.yaml
   - alertmanager-config.yaml
   - alertmanager-deployment.yaml
   - loki-deployment.yaml
