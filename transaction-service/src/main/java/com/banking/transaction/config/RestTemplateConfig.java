@@ -18,7 +18,11 @@ public class RestTemplateConfig {
 
     @Bean
     public RestTemplate restTemplate() {
-        RestTemplate restTemplate = new RestTemplate(new HttpComponentsClientHttpRequestFactory());
+        HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(5000);
+        requestFactory.setReadTimeout(10000);
+
+        RestTemplate restTemplate = new RestTemplate(requestFactory);
 
         // Interceptor: attach the JWT from the current thread to every outgoing request
         ClientHttpRequestInterceptor jwtForwardingInterceptor = new ClientHttpRequestInterceptor() {
