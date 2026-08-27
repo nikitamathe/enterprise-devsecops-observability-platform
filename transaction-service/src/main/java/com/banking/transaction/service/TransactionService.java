@@ -5,9 +5,12 @@ import com.banking.transaction.dto.TransactionResponse;
 import com.banking.transaction.exception.TransactionException;
 import com.banking.transaction.model.Transaction;
 import com.banking.transaction.repository.TransactionRepository;
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cloud.client.circuitbreaker.CircuitBreaker;
+import org.springframework.cloud.client.circuitbreaker.CircuitBreakerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -28,6 +31,7 @@ public class TransactionService {
     private final TransactionRepository transactionRepository;
     private final RestTemplate restTemplate;
     private final AccountCacheService accountCacheService;
+    private final CircuitBreakerFactory<?, ?> circuitBreakerFactory;
 
     @Value("${services.account-service}")
     private String accountServiceUrl;
@@ -228,11 +232,26 @@ public class TransactionService {
                 "operationType", operation
         );
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
-        restTemplate.patchForObject(
-                accountServiceUrl + "/api/accounts/" + accountNumber + "/balance",
-                entity,
-                Void.class
-        );
+        CircuitBreaker breaker = circuitBreakerFactory.create("accountService");
+        breaker.run(() -> {
+            restTemplate.patchForObject(
+                    accountServiceUrl + "/api/accounts/" + accountNumber + "/balance",
+                    entity,
+                    Void.class
+            );
+            return null;
+        }, throwable -> onAccountServiceFailure(throwable, accountNumber, operation));
+    }
+
+    private Void onAccountServiceFailure(Throwable throwable, String accountNumber, String operation) {
+        if (throwable instanceof CallNotPermittedException) {
+            log.warn("Circuit breaker 'accountService' is OPEN — skipping balance {} for account {}: {}",
+                    operation, accountNumber, throwable.getMessage());
+        }
+        if (throwable instanceof RuntimeException runtimeException) {
+            throw runtimeException;
+        }
+        throw new RuntimeException("Account service call failed: " + throwable.getMessage(), throwable);
     }
 
     private void sendNotification(Long userId, String accountNumber, String reference,
