@@ -16,6 +16,8 @@ export default class ErrorBoundary extends Component {
   }
 
   render() {
+    const { pageName = 'page' } = this.props
+
     if (this.state.hasError) {
       return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
@@ -25,7 +27,7 @@ export default class ErrorBoundary extends Component {
             </div>
             <h2 className="text-xl font-bold text-gray-900 mb-2">Something went wrong</h2>
             <p className="text-sm text-gray-500 mb-6">
-              An unexpected error occurred. Please try reloading the page.
+              The {pageName} page hit an unexpected error. Please try reloading.
             </p>
             <button
               onClick={() => window.location.reload()}
