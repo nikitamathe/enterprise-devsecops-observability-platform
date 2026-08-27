@@ -246,8 +246,54 @@ spec:
         - port: 8084
         - port: 8085
         - port: 9090
+        - port: 9093
+        - port: 9100
         - port: 3000
         - port: 3200
+---
+# Alertmanager: allow ingress from Prometheus only
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-alertmanager
+  namespace: banking
+spec:
+  podSelector:
+    matchLabels:
+      app: alertmanager
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: prometheus
+      ports:
+        - port: 9093
+  egress: []
+---
+# node-exporter: allow ingress from Prometheus only
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-node-exporter
+  namespace: banking
+spec:
+  podSelector:
+    matchLabels:
+      app: node-exporter
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: prometheus
+      ports:
+        - port: 9100
+  egress: []
 ---
 # Grafana: allow ingress from Ingress controller, egress to Prometheus and Tempo
 apiVersion: networking.k8s.io/v1
