@@ -45,6 +45,20 @@
             <artifactId>jjwt-api</artifactId>
             <version>${jjwt.version}</version>
         </dependency>
+        <!-- jjwt-impl and jjwt-jackson are required at runtime by JwtService; provided here so
+             common-lib consumers and its own tests no longer need to redeclare them. -->
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <version>${jjwt.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+            <version>${jjwt.version}</version>
+            <scope>runtime</scope>
+        </dependency>
         <!-- Structured JSON logging to console (provided to all consuming services) -->
         <dependency>
             <groupId>net.logstash.logback</groupId>
