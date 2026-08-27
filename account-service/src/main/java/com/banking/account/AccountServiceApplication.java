@@ -1,5 +1,6 @@
 package com.banking.account;
 
+import com.banking.common.web.CorrelationIdPropagationInterceptor;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
@@ -15,6 +16,8 @@ public class AccountServiceApplication {
 
     @Bean
     public RestTemplate restTemplate() {
-        return new RestTemplate();
+        RestTemplate restTemplate = new RestTemplate();
+        restTemplate.getInterceptors().add(new CorrelationIdPropagationInterceptor());
+        return restTemplate;
     }
 }

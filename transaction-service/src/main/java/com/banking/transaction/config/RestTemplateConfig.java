@@ -1,5 +1,6 @@
 package com.banking.transaction.config;
 
+import com.banking.common.web.CorrelationIdPropagationInterceptor;
 import com.banking.transaction.security.JwtContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -40,7 +41,9 @@ public class RestTemplateConfig {
             }
         };
 
-        restTemplate.setInterceptors(List.of(jwtForwardingInterceptor));
+        restTemplate.setInterceptors(List.of(
+                jwtForwardingInterceptor,
+                new CorrelationIdPropagationInterceptor()));
         return restTemplate;
     }
 }
