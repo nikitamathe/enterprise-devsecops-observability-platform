@@ -4,18 +4,15 @@ metadata:
   name: banking-ingress
   namespace: banking
   annotations:
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
-    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
-    nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+    # For HTTPS, listen on 443 and attach an ACM certificate ARN, e.g.:
+    #   alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS": 443}]'
+    #   alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:ACCOUNT:certificate/UUID
+    #   alb.ingress.kubernetes.io/ssl-redirect: "443"
 spec:
-  ingressClassName: nginx
-  tls:
-    - hosts:
-        - banking.yourdomain.com
-      secretName: banking-tls
+  ingressClassName: alb
   rules:
     - host: banking.yourdomain.com
       http:

@@ -106,6 +106,10 @@ kind: Service
 metadata:
   name: api-gateway
   namespace: banking
+  annotations:
+    alb.ingress.kubernetes.io/healthcheck-path: /actuator/health
+    alb.ingress.kubernetes.io/healthcheck-port: traffic-port
+    alb.ingress.kubernetes.io/success-codes: "200"
 spec:
   selector:
     app: api-gateway
