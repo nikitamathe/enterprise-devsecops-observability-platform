@@ -39,19 +39,20 @@ public class TransactionService {
     // ----------------------------------------------------------------
     //  Deposit
     // ----------------------------------------------------------------
-    @Transactional
     public TransactionResponse deposit(Long userId, TransactionRequest request) {
         validateAccountOwnership(request.getAccountNumber(), userId);
-
         Map<String, Object> account = fetchAccount(request.getAccountNumber());
         BigDecimal balanceBefore = new BigDecimal(account.get("balance").toString());
+        return doDeposit(userId, request, balanceBefore);
+    }
 
+    @Transactional
+    TransactionResponse doDeposit(Long userId, TransactionRequest request, BigDecimal balanceBefore) {
         Transaction txn = buildTransaction(userId, null, request.getAccountNumber(),
                 Transaction.TransactionType.DEPOSIT, request.getAmount(),
                 balanceBefore, request.getDescription());
 
         try {
-            // Credit the account
             updateBalance(request.getAccountNumber(), request.getAmount(), "CREDIT");
 
             BigDecimal balanceAfter = balanceBefore.add(request.getAmount());
@@ -76,10 +77,8 @@ public class TransactionService {
     // ----------------------------------------------------------------
     //  Withdrawal
     // ----------------------------------------------------------------
-    @Transactional
     public TransactionResponse withdraw(Long userId, TransactionRequest request) {
         validateAccountOwnership(request.getAccountNumber(), userId);
-
         Map<String, Object> account = fetchAccount(request.getAccountNumber());
         BigDecimal balanceBefore = new BigDecimal(account.get("balance").toString());
 
@@ -87,7 +86,11 @@ public class TransactionService {
             throw new TransactionException(
                     "Insufficient funds. Available: " + balanceBefore + ", Requested: " + request.getAmount());
         }
+        return doWithdraw(userId, request, balanceBefore);
+    }
 
+    @Transactional
+    TransactionResponse doWithdraw(Long userId, TransactionRequest request, BigDecimal balanceBefore) {
         Transaction txn = buildTransaction(userId, request.getAccountNumber(), null,
                 Transaction.TransactionType.WITHDRAWAL, request.getAmount(),
                 balanceBefore, request.getDescription());
@@ -117,7 +120,6 @@ public class TransactionService {
     // ----------------------------------------------------------------
     //  Transfer
     // ----------------------------------------------------------------
-    @Transactional
     public TransactionResponse transfer(Long userId, TransactionRequest request) {
         if (request.getFromAccountNumber() == null || request.getToAccountNumber() == null) {
             throw new TransactionException("Both fromAccountNumber and toAccountNumber are required for transfer");
@@ -127,7 +129,6 @@ public class TransactionService {
         }
 
         validateAccountOwnership(request.getFromAccountNumber(), userId);
-
         Map<String, Object> fromAccount = fetchAccount(request.getFromAccountNumber());
         BigDecimal balanceBefore = new BigDecimal(fromAccount.get("balance").toString());
 
@@ -138,7 +139,11 @@ public class TransactionService {
 
         // Verify destination account exists
         fetchAccount(request.getToAccountNumber());
+        return doTransfer(userId, request, balanceBefore);
+    }
 
+    @Transactional
+    TransactionResponse doTransfer(Long userId, TransactionRequest request, BigDecimal balanceBefore) {
         Transaction txn = buildTransaction(userId, request.getFromAccountNumber(), request.getToAccountNumber(),
                 Transaction.TransactionType.TRANSFER, request.getAmount(),
                 balanceBefore, request.getDescription());
