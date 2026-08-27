@@ -10,6 +10,7 @@ resources:
   - loki-deployment.yaml
   - promtail-daemonset.yaml
   - mysql-statefulset.yaml
+  - mysqld-exporter.yaml
   - redis-deployment.yaml
   - account-deployment.yaml
   - auth-deployment.yaml

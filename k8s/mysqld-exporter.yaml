@@ -1,0 +1,106 @@
+# mysqld-exporter: exposes MySQL metrics for Prometheus scraping
+#
+# DSN uses a dedicated least-privilege 'exporter' MySQL user created by the
+# init container. The password is reused from the existing mysql-secret
+# (mysql-user-password) so no new credentials are introduced. Grants are
+# limited to PROCESS, REPLICATION CLIENT and global SELECT, which is the
+# minimum mysqld-exporter needs.
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysqld-exporter
+  namespace: banking
+  labels:
+    app: mysqld-exporter
+spec:
+  selector:
+    app: mysqld-exporter
+  ports:
+    - name: metrics
+      port: 9104
+      targetPort: 9104
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysqld-exporter
+  namespace: banking
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysqld-exporter
+  template:
+    metadata:
+      labels:
+        app: mysqld-exporter
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9104"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        fsGroup: 65534
+      initContainers:
+        - name: create-exporter-user
+          image: mysql:8.0
+          command:
+            - /bin/sh
+            - -c
+            - |
+              MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql -h mysql -u root --batch --skip-column-names -e "
+                CREATE USER IF NOT EXISTS 'exporter'@'%' IDENTIFIED BY '$MYSQL_USER_PASSWORD';
+                ALTER USER 'exporter'@'%' IDENTIFIED BY '$MYSQL_USER_PASSWORD';
+                GRANT PROCESS, REPLICATION CLIENT, SELECT ON *.* TO 'exporter'@'%';
+                FLUSH PRIVILEGES;
+              "
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: mysql-root-password
+            - name: MYSQL_USER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: mysql-user-password
+      containers:
+        - name: mysqld-exporter
+          image: prom/mysqld-exporter:v0.15.1
+          ports:
+            - containerPort: 9104
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+          env:
+            - name: MYSQL_USER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: mysql-user-password
+            - name: DATA_SOURCE_NAME
+              value: "exporter:$(MYSQL_USER_PASSWORD)@tcp(mysql:3306)/"
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: 9104
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: 9104
+            initialDelaySeconds: 5
+            periodSeconds: 10
