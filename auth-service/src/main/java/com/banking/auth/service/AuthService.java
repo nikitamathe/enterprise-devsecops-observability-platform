@@ -7,6 +7,7 @@ import com.banking.auth.exception.UnauthorizedException;
 import com.banking.auth.model.User;
 import com.banking.auth.repository.UserRepository;
 import com.banking.common.security.JwtService;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -30,6 +31,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final UserDetailsService userDetailsService;
+    private final MeterRegistry meterRegistry;
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -78,6 +80,7 @@ public class AuthService {
 
         if (user.isAccountLocked()) {
             log.warn("Locked account login attempt: {}", user.getUsername());
+            meterRegistry.counter("banking.login.attempts", "result", "failure").increment();
             throw new org.springframework.security.authentication.LockedException(
                     "Account is locked. Try again after " + LOCKOUT_MINUTES + " minutes.");
         }
@@ -87,6 +90,7 @@ public class AuthService {
                     new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
             );
         } catch (BadCredentialsException e) {
+            meterRegistry.counter("banking.login.attempts", "result", "failure").increment();
             user.setFailedLoginAttempts(user.getFailedLoginAttempts() + 1);
             if (user.getFailedLoginAttempts() >= MAX_FAILED_ATTEMPTS) {
                 user.setLockoutTime(LocalDateTime.now());
@@ -99,6 +103,7 @@ public class AuthService {
         user.setFailedLoginAttempts(0);
         user.setLockoutTime(null);
         userRepository.save(user);
+        meterRegistry.counter("banking.login.attempts", "result", "success").increment();
 
         log.info("User logged in: {}", user.getUsername());
 

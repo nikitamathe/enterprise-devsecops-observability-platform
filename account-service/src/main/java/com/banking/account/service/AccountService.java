@@ -8,6 +8,7 @@ import com.banking.account.exception.InactiveAccountException;
 import com.banking.account.exception.InsufficientFundsException;
 import com.banking.account.model.Account;
 import com.banking.account.repository.AccountRepository;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,6 +32,7 @@ public class AccountService {
 
     private final AccountRepository accountRepository;
     private final RestTemplate restTemplate;
+    private final MeterRegistry meterRegistry;
 
     @Value("${notification-service.url}")
     private String notificationServiceUrl;
@@ -52,6 +54,7 @@ public class AccountService {
                 .build();
 
         account = accountRepository.save(account);
+        meterRegistry.counter("banking.account.creations").increment();
         log.info("Created account {} for user {}", accountNumber, userId);
 
         return mapToResponse(account);

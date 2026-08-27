@@ -6,6 +6,7 @@ import com.banking.transaction.exception.TransactionException;
 import com.banking.transaction.model.Transaction;
 import com.banking.transaction.repository.TransactionRepository;
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,6 +33,7 @@ public class TransactionService {
     private final RestTemplate restTemplate;
     private final AccountCacheService accountCacheService;
     private final CircuitBreakerFactory<?, ?> circuitBreakerFactory;
+    private final MeterRegistry meterRegistry;
 
     @Value("${services.account-service}")
     private String accountServiceUrl;
@@ -67,12 +69,14 @@ public class TransactionService {
                     "DEPOSIT_SUCCESS", request.getAmount(), balanceAfter);
 
             log.info("Deposit successful: {} amount={}", txn.getTransactionReference(), request.getAmount());
+            recordTransaction("DEPOSIT", Transaction.TransactionStatus.SUCCESS.name());
             return mapToResponse(txn);
         } catch (Exception e) {
             txn.setStatus(Transaction.TransactionStatus.FAILED);
             txn.setFailureReason(e.getMessage());
             transactionRepository.save(txn);
             log.error("Deposit failed for account {}: {}", request.getAccountNumber(), e.getMessage());
+            recordTransaction("DEPOSIT", Transaction.TransactionStatus.FAILED.name());
             throw new TransactionException("Deposit failed: " + e.getMessage());
         }
     }
@@ -110,12 +114,14 @@ public class TransactionService {
                     "WITHDRAWAL_SUCCESS", request.getAmount(), balanceAfter);
 
             log.info("Withdrawal successful: {} amount={}", txn.getTransactionReference(), request.getAmount());
+            recordTransaction("WITHDRAWAL", Transaction.TransactionStatus.SUCCESS.name());
             return mapToResponse(txn);
         } catch (Exception e) {
             txn.setStatus(Transaction.TransactionStatus.FAILED);
             txn.setFailureReason(e.getMessage());
             transactionRepository.save(txn);
             log.error("Withdrawal failed for account {}: {}", request.getAccountNumber(), e.getMessage());
+            recordTransaction("WITHDRAWAL", Transaction.TransactionStatus.FAILED.name());
             throw new TransactionException("Withdrawal failed: " + e.getMessage());
         }
     }
@@ -164,6 +170,7 @@ public class TransactionService {
                     "TRANSFER_SUCCESS", request.getAmount(), balanceAfter);
 
             log.info("Transfer successful: {} amount={}", txn.getTransactionReference(), request.getAmount());
+            recordTransaction("TRANSFER", Transaction.TransactionStatus.SUCCESS.name());
             return mapToResponse(txn);
         } catch (Exception e) {
             txn.setStatus(Transaction.TransactionStatus.FAILED);
@@ -171,6 +178,7 @@ public class TransactionService {
             transactionRepository.save(txn);
             log.error("Transfer failed from {} to {}: {}", request.getFromAccountNumber(),
                     request.getToAccountNumber(), e.getMessage());
+            recordTransaction("TRANSFER", Transaction.TransactionStatus.FAILED.name());
             throw new TransactionException("Transfer failed: " + e.getMessage());
         }
     }
@@ -293,6 +301,10 @@ public class TransactionService {
 
     private String generateReference() {
         return "TXN" + UUID.randomUUID();
+    }
+
+    private void recordTransaction(String type, String status) {
+        meterRegistry.counter("banking.transactions", "type", type, "status", status).increment();
     }
 
     private TransactionResponse mapToResponse(Transaction txn) {
