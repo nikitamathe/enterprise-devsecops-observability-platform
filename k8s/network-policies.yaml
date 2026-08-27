@@ -316,6 +316,50 @@ spec:
       ports:
         - port: 9090
         - port: 3200
+        - port: 3100
+---
+# Loki: allow ingress from Promtail (writes) and Grafana (queries)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-loki
+  namespace: banking
+spec:
+  podSelector:
+    matchLabels:
+      app: loki
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: promtail
+        - podSelector:
+            matchLabels:
+              app: grafana
+      ports:
+        - port: 3100
+  egress: []
+---
+# Promtail: allow egress to Loki and the Kubernetes API server (pod discovery)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-promtail
+  namespace: banking
+spec:
+  podSelector:
+    matchLabels:
+      app: promtail
+  policyTypes:
+    - Egress
+  egress:
+    - to: []
+      ports:
+        - port: 3100
+        - port: 443
 ---
 # Tempo: allow ingress from all pods (OTLP export) and Grafana (query)
 apiVersion: networking.k8s.io/v1

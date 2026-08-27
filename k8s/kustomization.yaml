@@ -9,6 +9,8 @@ resources:
   - grafana-secret.yaml
   - alertmanager-config.yaml
   - alertmanager-deployment.yaml
+  - loki-deployment.yaml
+  - promtail-daemonset.yaml
   - mysql-statefulset.yaml
   - redis-deployment.yaml
   - account-deployment.yaml
