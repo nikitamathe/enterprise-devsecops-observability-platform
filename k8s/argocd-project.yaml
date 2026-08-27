@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: banking
+  namespace: argocd
+spec:
+  description: Banking platform GitOps project
+  sourceRepos:
+    - https://github.com/nikitamathe/enterprise-devsecops-observability-platform
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: banking
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'
+  orphanedResources:
+    warn: true
