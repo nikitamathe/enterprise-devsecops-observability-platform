@@ -14,7 +14,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/transactions")
@@ -77,15 +76,17 @@ public class TransactionController {
     }
 
     @GetMapping("/history")
-    public ResponseEntity<ApiResponse<List<TransactionResponse>>> getHistory(
+    public ResponseEntity<ApiResponse<Page<TransactionResponse>>> getHistory(
             @RequestHeader("X-User-Id") Long userId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to) {
         if (!from.isBefore(to)) {
             throw new TransactionException("'from' must be before 'to'");
         }
-        List<TransactionResponse> transactions =
-                transactionService.getTransactionsByUserIdAndDateRange(userId, from, to);
+        Page<TransactionResponse> transactions =
+                transactionService.getTransactionsByUserIdAndDateRange(userId, from, to, page, size);
         return ResponseEntity.ok(ApiResponse.success("Transaction history retrieved", transactions));
     }
 }

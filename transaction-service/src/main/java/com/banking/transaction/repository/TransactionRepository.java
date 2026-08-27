@@ -8,7 +8,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -21,6 +20,6 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
 
     Optional<Transaction> findByTransactionReference(String transactionReference);
 
-    List<Transaction> findByUserIdAndCreatedAtBetweenOrderByCreatedAtDesc(
-            Long userId, LocalDateTime start, LocalDateTime end);
+    Page<Transaction> findByUserIdAndCreatedAtBetweenOrderByCreatedAtDesc(
+            Long userId, LocalDateTime start, LocalDateTime end, Pageable pageable);
 }

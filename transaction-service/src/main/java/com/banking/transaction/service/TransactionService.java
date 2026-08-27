@@ -19,7 +19,6 @@ import org.springframework.web.client.RestTemplate;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -192,13 +191,12 @@ public class TransactionService {
         return mapToResponse(txn);
     }
 
-    public List<TransactionResponse> getTransactionsByUserIdAndDateRange(
-            Long userId, LocalDateTime from, LocalDateTime to) {
+    public Page<TransactionResponse> getTransactionsByUserIdAndDateRange(
+            Long userId, LocalDateTime from, LocalDateTime to, int page, int size) {
         return transactionRepository
-                .findByUserIdAndCreatedAtBetweenOrderByCreatedAtDesc(userId, from, to)
-                .stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+                .findByUserIdAndCreatedAtBetweenOrderByCreatedAtDesc(
+                        userId, from, to, PageRequest.of(page, size))
+                .map(this::mapToResponse);
     }
 
     // ----------------------------------------------------------------
