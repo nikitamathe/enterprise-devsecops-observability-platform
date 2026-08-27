@@ -1,0 +1,4 @@
+{{- if .Values.services.notification.enabled }}
+{{- $s := .Values.services.notification }}
+{{ include "banking.service" (dict "ctx" . "name" "notification-service" "port" $s.port "replicas" $s.replicas "image" $s.image "resources" $s.resources "tracingSamplingProbability" (default "0.1" $s.tracingSamplingProbability) "serviceHostEnv" $s.serviceHostEnv) }}
+{{- end }}

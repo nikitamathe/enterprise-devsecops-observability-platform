@@ -1,0 +1,70 @@
+{{- if .Values.observability.enabled }}
+{{- if .Values.observability.nodeExporter.enabled }}
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: node-exporter
+  namespace: {{ include "banking.namespace" . }}
+spec:
+  selector:
+    matchLabels:
+      app: node-exporter
+  template:
+    metadata:
+      labels:
+        app: node-exporter
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9100"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        fsGroup: 65534
+      containers:
+        - name: node-exporter
+          image: {{ .Values.observability.nodeExporter.image }}
+          args:
+            - --path.rootfs=/host/root
+            - --path.procfs=/host/proc
+            - --path.sysfs=/host/sys
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+          ports:
+            - containerPort: 9100
+          volumeMounts:
+            - name: rootfs
+              mountPath: /host/root
+              readOnly: true
+            - name: procfs
+              mountPath: /host/proc
+              readOnly: true
+            - name: sysfs
+              mountPath: /host/sys
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: rootfs
+          hostPath:
+            path: /
+        - name: procfs
+          hostPath:
+            path: /proc
+        - name: sysfs
+          hostPath:
+            path: /sys
+        - name: tmp
+          emptyDir: {}
+{{- end }}
+{{- end }}

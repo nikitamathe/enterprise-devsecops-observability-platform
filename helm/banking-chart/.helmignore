@@ -1,0 +1,8 @@
+# Patterns to ignore when building the package.
+.git
+.terraform
+*.md
+*.tgz
+helm/banking-chart/values-dev.yaml
+charts/
+README.md

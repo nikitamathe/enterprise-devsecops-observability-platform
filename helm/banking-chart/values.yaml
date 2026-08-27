@@ -1,0 +1,172 @@
+# Global settings for the banking-chart.
+namespace: banking
+
+# ECR registry serving the application service images.
+imageRegistry: 340529311540.dkr.ecr.us-east-1.amazonaws.com
+imagePullPolicy: IfNotPresent
+
+# Spring services connect to this MySQL database (single shared DB until M3.4).
+database:
+  host: mysql
+  port: 3306
+  name: banking
+
+# External Secrets Operator: AWS Secrets Manager store that materialises
+# mysql-secret, jwt-secret and grafana-secret in the release namespace.
+externalSecrets:
+  enabled: true
+  storeName: aws-secretsmanager
+  region: us-east-1
+  secretPrefix: banking
+  refreshInterval: 1h
+
+# Application services.
+services:
+  auth:
+    enabled: true
+    port: 8081
+    replicas: 2
+    image:
+      repository: auth-service
+      tag: latest
+    serviceHostEnv: {}
+    resources:
+      requests: { cpu: 250m, memory: 512Mi }
+      limits: { cpu: 1000m, memory: 1Gi }
+  account:
+    enabled: true
+    port: 8082
+    replicas: 2
+    image:
+      repository: account-service
+      tag: latest
+    serviceHostEnv: {}
+    resources:
+      requests: { cpu: 250m, memory: 512Mi }
+      limits: { cpu: 1000m, memory: 1Gi }
+  transaction:
+    enabled: true
+    port: 8083
+    replicas: 2
+    image:
+      repository: transaction-service
+      tag: latest
+    serviceHostEnv:
+      - { name: ACCOUNT_SERVICE_HOST, value: account-service }
+      - { name: ACCOUNT_SERVICE_PORT, value: "8082" }
+      - { name: NOTIFICATION_SERVICE_HOST, value: notification-service }
+      - { name: NOTIFICATION_SERVICE_PORT, value: "8084" }
+    resources:
+      requests: { cpu: 250m, memory: 512Mi }
+      limits: { cpu: 1000m, memory: 1Gi }
+  notification:
+    enabled: true
+    port: 8084
+    replicas: 2
+    image:
+      repository: notification-service
+      tag: latest
+    serviceHostEnv: {}
+    resources:
+      requests: { cpu: 250m, memory: 512Mi }
+      limits: { cpu: 1000m, memory: 1Gi }
+  apiGateway:
+    enabled: true
+    port: 8085
+    replicas: 2
+    image:
+      repository: api-gateway
+      tag: latest
+    tracingSamplingProbability: "0.1"
+    serviceHostEnv:
+      - { name: AUTH_SERVICE_HOST, value: auth-service }
+      - { name: AUTH_SERVICE_PORT, value: "8081" }
+      - { name: ACCOUNT_SERVICE_HOST, value: account-service }
+      - { name: ACCOUNT_SERVICE_PORT, value: "8082" }
+      - { name: TRANSACTION_SERVICE_HOST, value: transaction-service }
+      - { name: TRANSACTION_SERVICE_PORT, value: "8083" }
+      - { name: NOTIFICATION_SERVICE_HOST, value: notification-service }
+      - { name: NOTIFICATION_SERVICE_PORT, value: "8084" }
+      - { name: REDIS_HOST, value: redis }
+    resources:
+      requests: { cpu: 250m, memory: 512Mi }
+      limits: { cpu: 1000m, memory: 1Gi }
+  frontend:
+    enabled: true
+    replicas: 2
+    image:
+      repository: frontend
+      tag: latest
+    resources:
+      requests: { cpu: 100m, memory: 128Mi }
+      limits: { cpu: 500m, memory: 256Mi }
+
+# Data stores.
+mysql:
+  enabled: true
+  image: mysql:8.0
+  resources:
+    requests: { cpu: 500m, memory: 1Gi }
+    limits: { cpu: "2", memory: 4Gi }
+
+redis:
+  enabled: true
+  image: redis:7-alpine
+  rateLimit:
+    replenishRate: 2
+    burstCapacity: 20
+  resources:
+    requests: { cpu: 100m, memory: 128Mi }
+    limits: { cpu: 500m, memory: 256Mi }
+
+# Observability stack.
+observability:
+  enabled: true
+  prometheus:
+    enabled: true
+    image: prom/prometheus:v2.54.1
+  alertmanager:
+    enabled: true
+    image: prom/alertmanager:v0.27.0
+  grafana:
+    enabled: true
+    image: grafana/grafana:11.2.0
+  tempo:
+    enabled: true
+    image: grafana/tempo:2.6.0
+  nodeExporter:
+    enabled: true
+    image: prom/node-exporter:v1.8.2
+  loki:
+    enabled: true
+    image: grafana/loki:3.2.0
+  promtail:
+    enabled: true
+    image: grafana/promtail:3.2.0
+
+# Ingress (AWS ALB).
+ingress:
+  enabled: true
+  host: banking.yourdomain.com
+  className: alb
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+
+# Horizontal autoscaling.
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+# Pod disruption budgets.
+pdb:
+  enabled: true
+  maxUnavailable: 1
+
+# Resource quotas / limit ranges.
+resourceQuota:
+  enabled: true

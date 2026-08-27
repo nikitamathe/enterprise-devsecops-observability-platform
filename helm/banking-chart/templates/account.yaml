@@ -1,0 +1,4 @@
+{{- if .Values.services.account.enabled }}
+{{- $s := .Values.services.account }}
+{{ include "banking.service" (dict "ctx" . "name" "account-service" "port" $s.port "replicas" $s.replicas "image" $s.image "resources" $s.resources "tracingSamplingProbability" (default "0.1" $s.tracingSamplingProbability) "serviceHostEnv" $s.serviceHostEnv) }}
+{{- end }}

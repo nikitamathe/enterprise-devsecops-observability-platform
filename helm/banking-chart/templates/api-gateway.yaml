@@ -1,0 +1,102 @@
+{{- if .Values.services.apiGateway.enabled }}
+{{- $s := .Values.services.apiGateway }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+  namespace: {{ include "banking.namespace" . }}
+spec:
+  replicas: {{ $s.replicas }}
+  selector:
+    matchLabels:
+      app: api-gateway
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: /actuator/prometheus
+        prometheus.io/port: "{{ $s.port }}"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: api-gateway
+          image: {{ include "banking.image" (dict "registry" .Values.imageRegistry "repository" $s.image.repository "tag" $s.image.tag) }}
+          ports:
+            - containerPort: {{ $s.port }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            {{- toYaml $s.resources | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: {{ $s.port }}
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: {{ $s.port }}
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          env:
+            - name: MANAGEMENT_TRACING_SAMPLING_PROBABILITY
+              value: {{ default "0.1" $s.tracingSamplingProbability | quote }}
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:mysql://{{ .Values.database.host }}:{{ .Values.database.port }}/{{ .Values.database.name }}?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: mysql-user
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: mysql-user-password
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: jwt-secret
+                  key: jwt-secret
+            {{- range $s.serviceHostEnv }}
+            - name: {{ .name }}
+              value: {{ .value | quote }}
+            {{- end }}
+          volumeMounts:
+            - name: gateway-config
+              mountPath: /app/config/application.yml
+              subPath: application.yml
+      volumes:
+        - name: gateway-config
+          configMap:
+            name: api-gateway-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-gateway
+  namespace: {{ include "banking.namespace" . }}
+  annotations:
+    alb.ingress.kubernetes.io/healthcheck-path: /actuator/health
+    alb.ingress.kubernetes.io/healthcheck-port: traffic-port
+    alb.ingress.kubernetes.io/success-codes: "200"
+spec:
+  selector:
+    app: api-gateway
+  ports:
+    - port: {{ $s.port }}
+      targetPort: {{ $s.port }}
+{{- end }}

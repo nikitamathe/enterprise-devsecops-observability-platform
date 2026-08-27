@@ -1,0 +1,68 @@
+{{- if .Values.pdb.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: auth-service-pdb
+  namespace: {{ include "banking.namespace" . }}
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: auth-service
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: account-service-pdb
+  namespace: {{ include "banking.namespace" . }}
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: account-service
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: transaction-service-pdb
+  namespace: {{ include "banking.namespace" . }}
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: transaction-service
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: notification-service-pdb
+  namespace: {{ include "banking.namespace" . }}
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: notification-service
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: api-gateway-pdb
+  namespace: {{ include "banking.namespace" . }}
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: api-gateway
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: frontend-pdb
+  namespace: {{ include "banking.namespace" . }}
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: frontend
+
+{{- end }}

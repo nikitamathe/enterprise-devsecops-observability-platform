@@ -1,0 +1,147 @@
+{{- if .Values.observability.enabled }}
+{{- if .Values.observability.alertmanager.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alertmanager-config
+  namespace: {{ include "banking.namespace" . }}
+data:
+  alertmanager.yml: |
+    global:
+      resolve_timeout: 5m
+    route:
+      group_by: ['alertname', 'instance']
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 4h
+      receiver: 'critical'
+    receivers:
+      - name: 'critical'
+        # Placeholder webhook. Replace with a real Slack/email/webhook endpoint
+        # when deploying to a production environment.
+        webhook_configs:
+          - url: 'http://alerts-sink:8080/alerts'
+            send_resolved: true
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-rules
+  namespace: {{ include "banking.namespace" . }}
+data:
+  rules.yml: |
+    groups:
+      - name: banking-alerts
+        rules:
+          - alert: ServiceDown
+            expr: up{job="spring-services"} == 0
+            for: 2m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Service {{ "{{" }} $labels.instance {{ "}}" }} is down"
+              description: "Prometheus target {{ "{{" }} $labels.instance {{ "}}" }} has been unreachable for more than 2 minutes."
+          - alert: HighErrorRate
+            expr: 100 * sum(rate(http_server_requests_seconds_count{job="spring-services",status=~"5.."}[5m])) by (instance) / sum(rate(http_server_requests_seconds_count{job="spring-services"}[5m])) by (instance) > 5
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: "High 5xx error rate on {{ "{{" }} $labels.instance {{ "}}" }}"
+              description: "Instance {{ "{{" }} $labels.instance {{ "}}" }} is returning 5xx responses at a rate above 5% for more than 5 minutes."
+          - alert: DiskSpaceLow
+            expr: 100 * (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) < 10
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Disk space low on {{ "{{" }} $labels.instance {{ "}}" }}"
+              description: "The root filesystem on {{ "{{" }} $labels.instance {{ "}}" }} is more than 90% full for more than 5 minutes."
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alertmanager
+  namespace: {{ include "banking.namespace" . }}
+  labels:
+    app: alertmanager
+spec:
+  selector:
+    app: alertmanager
+  ports:
+    - name: web
+      port: 9093
+      targetPort: 9093
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alertmanager
+  namespace: {{ include "banking.namespace" . }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: alertmanager
+  template:
+    metadata:
+      labels:
+        app: alertmanager
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9093"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        fsGroup: 65534
+      containers:
+        - name: alertmanager
+          image: {{ .Values.observability.alertmanager.image }}
+          args:
+            - --config.file=/etc/alertmanager/alertmanager.yml
+            - --storage.path=/alertmanager
+            - --web.listen-address=:9093
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 300m
+              memory: 256Mi
+          ports:
+            - containerPort: 9093
+          readinessProbe:
+            httpGet:
+              path: /-/ready
+              port: 9093
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /-/healthy
+              port: 9093
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          volumeMounts:
+            - name: config
+              mountPath: /etc/alertmanager
+            - name: data
+              mountPath: /alertmanager
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: config
+          configMap:
+            name: alertmanager-config
+        - name: data
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+{{- end }}
+{{- end }}
