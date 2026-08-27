@@ -1,0 +1,5 @@
+aws_region                  = "us-east-1"
+cluster_name                = "banking-eks"
+domain_name                 = "banking.yourdomain.com"
+cloudfront_price_class      = "PriceClass_100"
+origin_verify_header_value  = "CHANGE_ME_TO_A_LONG_RANDOM_STRING"

@@ -60,3 +60,11 @@ semgrep-env/
 
 # AI generated documentation
 ai-docs/
+
+# ── Terraform ─────────────────────────────────────────────────────────────
+infra/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!infra/terraform.tfvars.example
+infra/terraform.tfvars
