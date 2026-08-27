@@ -80,11 +80,8 @@ public class NotificationService {
 
     @Transactional
     public void markAllAsRead(Long userId) {
-        List<Notification> unread = notificationRepository
-                .findByUserIdAndReadFalseOrderByCreatedAtDesc(userId);
-        unread.forEach(n -> n.setRead(true));
-        notificationRepository.saveAll(unread);
-        log.info("Marked {} notifications as read for user {}", unread.size(), userId);
+        int updated = notificationRepository.markAllAsRead(userId);
+        log.info("Marked {} notifications as read for user {}", updated, userId);
     }
 
     // ----------------------------------------------------------------
