@@ -1,5 +1,6 @@
 package com.banking.transaction.service;
 
+import com.banking.common.logging.AuditLogger;
 import com.banking.common.logging.PiiSanitizer;
 import com.banking.transaction.dto.TransactionRequest;
 import com.banking.transaction.dto.TransactionResponse;
@@ -70,12 +71,16 @@ public class TransactionService {
                     "DEPOSIT_SUCCESS", request.getAmount(), balanceAfter);
 
             log.info("Deposit successful: {} amount={}", txn.getTransactionReference(), request.getAmount());
+            AuditLogger.success("DEPOSIT", String.valueOf(userId), request.getAccountNumber(),
+                    "reference=" + txn.getTransactionReference() + " amount=" + request.getAmount());
             recordTransaction("DEPOSIT", Transaction.TransactionStatus.SUCCESS.name());
             return mapToResponse(txn);
         } catch (Exception e) {
             txn.setStatus(Transaction.TransactionStatus.FAILED);
             txn.setFailureReason(e.getMessage());
             transactionRepository.save(txn);
+            AuditLogger.failure("DEPOSIT", String.valueOf(userId), request.getAccountNumber(),
+                    PiiSanitizer.maskAccountNumbers(e.getMessage()));
             log.error("Deposit failed for account {}: {}",
                     PiiSanitizer.maskAccountNumber(request.getAccountNumber()),
                     PiiSanitizer.maskAccountNumbers(e.getMessage()));
@@ -117,12 +122,16 @@ public class TransactionService {
                     "WITHDRAWAL_SUCCESS", request.getAmount(), balanceAfter);
 
             log.info("Withdrawal successful: {} amount={}", txn.getTransactionReference(), request.getAmount());
+            AuditLogger.success("WITHDRAWAL", String.valueOf(userId), request.getAccountNumber(),
+                    "reference=" + txn.getTransactionReference() + " amount=" + request.getAmount());
             recordTransaction("WITHDRAWAL", Transaction.TransactionStatus.SUCCESS.name());
             return mapToResponse(txn);
         } catch (Exception e) {
             txn.setStatus(Transaction.TransactionStatus.FAILED);
             txn.setFailureReason(e.getMessage());
             transactionRepository.save(txn);
+            AuditLogger.failure("WITHDRAWAL", String.valueOf(userId), request.getAccountNumber(),
+                    PiiSanitizer.maskAccountNumbers(e.getMessage()));
             log.error("Withdrawal failed for account {}: {}",
                     PiiSanitizer.maskAccountNumber(request.getAccountNumber()),
                     PiiSanitizer.maskAccountNumbers(e.getMessage()));
@@ -175,12 +184,17 @@ public class TransactionService {
                     "TRANSFER_SUCCESS", request.getAmount(), balanceAfter);
 
             log.info("Transfer successful: {} amount={}", txn.getTransactionReference(), request.getAmount());
+            AuditLogger.success("TRANSFER", String.valueOf(userId), request.getFromAccountNumber(),
+                    "to=" + request.getToAccountNumber() + " reference=" + txn.getTransactionReference()
+                            + " amount=" + request.getAmount());
             recordTransaction("TRANSFER", Transaction.TransactionStatus.SUCCESS.name());
             return mapToResponse(txn);
         } catch (Exception e) {
             txn.setStatus(Transaction.TransactionStatus.FAILED);
             txn.setFailureReason(e.getMessage());
             transactionRepository.save(txn);
+            AuditLogger.failure("TRANSFER", String.valueOf(userId), request.getFromAccountNumber(),
+                    "to=" + request.getToAccountNumber() + " " + PiiSanitizer.maskAccountNumbers(e.getMessage()));
             log.error("Transfer failed from {} to {}: {}",
                     PiiSanitizer.maskAccountNumber(request.getFromAccountNumber()),
                     PiiSanitizer.maskAccountNumber(request.getToAccountNumber()),

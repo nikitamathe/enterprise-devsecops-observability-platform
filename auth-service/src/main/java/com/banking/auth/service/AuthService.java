@@ -6,6 +6,7 @@ import com.banking.auth.exception.ResourceNotFoundException;
 import com.banking.auth.exception.UnauthorizedException;
 import com.banking.auth.model.User;
 import com.banking.auth.repository.UserRepository;
+import com.banking.common.logging.AuditLogger;
 import com.banking.common.logging.PiiSanitizer;
 import com.banking.common.security.JwtService;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -80,6 +81,8 @@ public class AuthService {
                 .orElseThrow(() -> new ResourceNotFoundException("Invalid credentials"));
 
         if (user.isAccountLocked()) {
+            AuditLogger.failure("LOGIN", String.valueOf(user.getId()),
+                    PiiSanitizer.hashUsername(user.getUsername()), "ACCOUNT_LOCKED");
             log.warn("Locked account login attempt: {}", PiiSanitizer.hashUsername(user.getUsername()));
             meterRegistry.counter("banking.login.attempts", "result", "failure").increment();
             throw new org.springframework.security.authentication.LockedException(
@@ -91,6 +94,7 @@ public class AuthService {
                     new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
             );
         } catch (BadCredentialsException e) {
+            AuditLogger.failure("LOGIN", PiiSanitizer.hashUsername(request.getUsername()), "-", "BAD_CREDENTIALS");
             meterRegistry.counter("banking.login.attempts", "result", "failure").increment();
             user.setFailedLoginAttempts(user.getFailedLoginAttempts() + 1);
             if (user.getFailedLoginAttempts() >= MAX_FAILED_ATTEMPTS) {
@@ -106,6 +110,8 @@ public class AuthService {
         userRepository.save(user);
         meterRegistry.counter("banking.login.attempts", "result", "success").increment();
 
+        AuditLogger.success("LOGIN", String.valueOf(user.getId()),
+                PiiSanitizer.hashUsername(user.getUsername()), "authenticated");
         log.info("User logged in: {}", PiiSanitizer.hashUsername(user.getUsername()));
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(user.getUsername());
