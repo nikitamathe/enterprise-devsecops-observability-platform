@@ -2,12 +2,24 @@
     <springProperty scope="context" name="app" source="spring.application.name" defaultValue="unknown"/>
 
     <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
-            <includeContext>false</includeContext>
-            <customFields>{"app":"${app}"}</customFields>
-            <includeMdcKeyName>correlationId</includeMdcKeyName>
-            <includeMdcKeyName>traceId</includeMdcKeyName>
-            <includeMdcKeyName>spanId</includeMdcKeyName>
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <providers>
+                <provider class="net.logstash.logback.composite.loggingevent.LoggingEventFormattedTimestampJsonProvider"/>
+                <version/>
+                <logLevel/>
+                <logLevelValue/>
+                <loggerName/>
+                <threadName/>
+                <provider class="com.banking.common.logging.PiiMaskingJsonProvider"/>
+                <mdc>
+                    <includeMdcKeyName>correlationId</includeMdcKeyName>
+                    <includeMdcKeyName>traceId</includeMdcKeyName>
+                    <includeMdcKeyName>spanId</includeMdcKeyName>
+                </mdc>
+                <stackTrace>
+                    <throwableConverter class="com.banking.common.logging.PiiMaskingThrowableConverter"/>
+                </stackTrace>
+            </providers>
         </encoder>
     </appender>
 

@@ -1,5 +1,6 @@
 package com.banking.gateway.filter;
 
+import com.banking.common.logging.PiiSanitizer;
 import com.banking.common.security.JwtService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -50,18 +51,20 @@ public class AuthFilter extends AbstractGatewayFilterFactory<AuthFilter.Config> 
                         .build();
 
                 log.debug("Authenticated request: user={} userId={} path={}",
-                        username, userId, exchange.getRequest().getPath());
+                        PiiSanitizer.hashUsername(username), userId,
+                        PiiSanitizer.maskAccountNumbers(exchange.getRequest().getPath()));
 
                 return chain.filter(mutatedExchange);
             } catch (Exception e) {
-                log.warn("Token processing error: {}", e.getMessage());
+                log.warn("Token processing error: {}", PiiSanitizer.maskAccountNumbers(e.getMessage()));
                 return unauthorized(exchange, "Token processing failed");
             }
         };
     }
 
     private Mono<Void> unauthorized(ServerWebExchange exchange, String reason) {
-        log.warn("Unauthorized request to {}: {}", exchange.getRequest().getPath(), reason);
+        log.warn("Unauthorized request to {}: {}",
+                PiiSanitizer.maskAccountNumbers(exchange.getRequest().getPath()), reason);
         exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
         return exchange.getResponse().setComplete();
     }

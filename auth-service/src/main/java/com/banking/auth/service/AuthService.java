@@ -6,6 +6,7 @@ import com.banking.auth.exception.ResourceNotFoundException;
 import com.banking.auth.exception.UnauthorizedException;
 import com.banking.auth.model.User;
 import com.banking.auth.repository.UserRepository;
+import com.banking.common.logging.PiiSanitizer;
 import com.banking.common.security.JwtService;
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
@@ -54,7 +55,7 @@ public class AuthService {
                 .build();
 
         user = userRepository.save(user);
-        log.info("Registered new user: {}", user.getUsername());
+        log.info("Registered new user: {}", PiiSanitizer.hashUsername(user.getUsername()));
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(user.getUsername());
         String accessToken = jwtService.generateToken(userDetails, user.getId());
@@ -79,7 +80,7 @@ public class AuthService {
                 .orElseThrow(() -> new ResourceNotFoundException("Invalid credentials"));
 
         if (user.isAccountLocked()) {
-            log.warn("Locked account login attempt: {}", user.getUsername());
+            log.warn("Locked account login attempt: {}", PiiSanitizer.hashUsername(user.getUsername()));
             meterRegistry.counter("banking.login.attempts", "result", "failure").increment();
             throw new org.springframework.security.authentication.LockedException(
                     "Account is locked. Try again after " + LOCKOUT_MINUTES + " minutes.");
@@ -94,7 +95,7 @@ public class AuthService {
             user.setFailedLoginAttempts(user.getFailedLoginAttempts() + 1);
             if (user.getFailedLoginAttempts() >= MAX_FAILED_ATTEMPTS) {
                 user.setLockoutTime(LocalDateTime.now());
-                log.warn("Account locked after {} failed attempts: {}", MAX_FAILED_ATTEMPTS, user.getUsername());
+                log.warn("Account locked after {} failed attempts: {}", MAX_FAILED_ATTEMPTS, PiiSanitizer.hashUsername(user.getUsername()));
             }
             userRepository.save(user);
             throw e;
@@ -105,7 +106,7 @@ public class AuthService {
         userRepository.save(user);
         meterRegistry.counter("banking.login.attempts", "result", "success").increment();
 
-        log.info("User logged in: {}", user.getUsername());
+        log.info("User logged in: {}", PiiSanitizer.hashUsername(user.getUsername()));
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(user.getUsername());
         String accessToken = jwtService.generateToken(userDetails, user.getId());

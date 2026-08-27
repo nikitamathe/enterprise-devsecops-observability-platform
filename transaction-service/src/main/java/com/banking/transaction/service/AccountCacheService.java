@@ -1,6 +1,7 @@
 package com.banking.transaction.service;
 
 import com.banking.common.dto.ApiResponse;
+import com.banking.common.logging.PiiSanitizer;
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +26,7 @@ public class AccountCacheService {
 
     @Cacheable(value = "accounts", key = "#accountNumber")
     public Map<String, Object> fetchAccount(String accountNumber, String accountServiceUrl) {
-        log.debug("Cache miss — fetching account {} from account-service", accountNumber);
+        log.debug("Cache miss — fetching account {} from account-service", PiiSanitizer.maskAccountNumber(accountNumber));
         try {
             CircuitBreaker breaker = circuitBreakerFactory.create("accountService");
             return breaker.run(() -> doFetchAccount(accountNumber, accountServiceUrl), this::onAccountServiceFailure);
@@ -53,7 +54,7 @@ public class AccountCacheService {
     private Map<String, Object> onAccountServiceFailure(Throwable throwable) {
         if (throwable instanceof CallNotPermittedException) {
             log.warn("Circuit breaker 'accountService' is OPEN — skipping account-service lookup: {}",
-                    throwable.getMessage());
+                    PiiSanitizer.maskAccountNumbers(throwable.getMessage()));
         }
         if (throwable instanceof RuntimeException runtimeException) {
             throw runtimeException;

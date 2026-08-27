@@ -1,5 +1,6 @@
 package com.banking.transaction.service;
 
+import com.banking.common.logging.PiiSanitizer;
 import com.banking.transaction.dto.TransactionRequest;
 import com.banking.transaction.dto.TransactionResponse;
 import com.banking.transaction.exception.TransactionException;
@@ -75,7 +76,9 @@ public class TransactionService {
             txn.setStatus(Transaction.TransactionStatus.FAILED);
             txn.setFailureReason(e.getMessage());
             transactionRepository.save(txn);
-            log.error("Deposit failed for account {}: {}", request.getAccountNumber(), e.getMessage());
+            log.error("Deposit failed for account {}: {}",
+                    PiiSanitizer.maskAccountNumber(request.getAccountNumber()),
+                    PiiSanitizer.maskAccountNumbers(e.getMessage()));
             recordTransaction("DEPOSIT", Transaction.TransactionStatus.FAILED.name());
             throw new TransactionException("Deposit failed: " + e.getMessage());
         }
@@ -120,7 +123,9 @@ public class TransactionService {
             txn.setStatus(Transaction.TransactionStatus.FAILED);
             txn.setFailureReason(e.getMessage());
             transactionRepository.save(txn);
-            log.error("Withdrawal failed for account {}: {}", request.getAccountNumber(), e.getMessage());
+            log.error("Withdrawal failed for account {}: {}",
+                    PiiSanitizer.maskAccountNumber(request.getAccountNumber()),
+                    PiiSanitizer.maskAccountNumbers(e.getMessage()));
             recordTransaction("WITHDRAWAL", Transaction.TransactionStatus.FAILED.name());
             throw new TransactionException("Withdrawal failed: " + e.getMessage());
         }
@@ -176,8 +181,10 @@ public class TransactionService {
             txn.setStatus(Transaction.TransactionStatus.FAILED);
             txn.setFailureReason(e.getMessage());
             transactionRepository.save(txn);
-            log.error("Transfer failed from {} to {}: {}", request.getFromAccountNumber(),
-                    request.getToAccountNumber(), e.getMessage());
+            log.error("Transfer failed from {} to {}: {}",
+                    PiiSanitizer.maskAccountNumber(request.getFromAccountNumber()),
+                    PiiSanitizer.maskAccountNumber(request.getToAccountNumber()),
+                    PiiSanitizer.maskAccountNumbers(e.getMessage()));
             recordTransaction("TRANSFER", Transaction.TransactionStatus.FAILED.name());
             throw new TransactionException("Transfer failed: " + e.getMessage());
         }
@@ -254,7 +261,8 @@ public class TransactionService {
     private Void onAccountServiceFailure(Throwable throwable, String accountNumber, String operation) {
         if (throwable instanceof CallNotPermittedException) {
             log.warn("Circuit breaker 'accountService' is OPEN — skipping balance {} for account {}: {}",
-                    operation, accountNumber, throwable.getMessage());
+                    operation, PiiSanitizer.maskAccountNumber(accountNumber),
+                    PiiSanitizer.maskAccountNumbers(throwable.getMessage()));
         }
         if (throwable instanceof RuntimeException runtimeException) {
             throw runtimeException;
@@ -278,7 +286,8 @@ public class TransactionService {
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(payload, headers);
             restTemplate.postForEntity(notificationServiceUrl + "/api/notifications/internal", entity, Void.class);
         } catch (Exception e) {
-            log.warn("Failed to send notification for ref {}: {}", reference, e.getMessage());
+            log.warn("Failed to send notification for ref {}: {}", reference,
+                PiiSanitizer.maskAccountNumbers(e.getMessage()));
         }
     }
 

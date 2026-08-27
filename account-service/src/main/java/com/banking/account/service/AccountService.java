@@ -8,6 +8,7 @@ import com.banking.account.exception.InactiveAccountException;
 import com.banking.account.exception.InsufficientFundsException;
 import com.banking.account.model.Account;
 import com.banking.account.repository.AccountRepository;
+import com.banking.common.logging.PiiSanitizer;
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -55,7 +56,7 @@ public class AccountService {
 
         account = accountRepository.save(account);
         meterRegistry.counter("banking.account.creations").increment();
-        log.info("Created account {} for user {}", accountNumber, userId);
+        log.info("Created account {} for user {}", PiiSanitizer.maskAccountNumber(accountNumber), userId);
 
         return mapToResponse(account);
     }
@@ -105,7 +106,7 @@ public class AccountService {
         }
 
         account = accountRepository.save(account);
-        log.info("Updated balance for account {}: {} {}", accountNumber, request.getOperationType(), request.getAmount());
+        log.info("Updated balance for account {}: {} {}", PiiSanitizer.maskAccountNumber(accountNumber), request.getOperationType(), request.getAmount());
 
         return mapToResponse(account);
     }
@@ -117,7 +118,7 @@ public class AccountService {
 
         account.setStatus(Account.AccountStatus.CLOSED);
         account = accountRepository.save(account);
-        log.info("Closed account {}", account.getAccountNumber());
+        log.info("Closed account {}", PiiSanitizer.maskAccountNumber(account.getAccountNumber()));
 
         return mapToResponse(account);
     }
@@ -135,7 +136,9 @@ public class AccountService {
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(payload, headers);
             restTemplate.postForEntity(notificationServiceUrl + "/api/notifications/internal", entity, Void.class);
         } catch (Exception e) {
-            log.warn("Failed to send low balance notification for account {}: {}", account.getAccountNumber(), e.getMessage());
+            log.warn("Failed to send low balance notification for account {}: {}",
+                PiiSanitizer.maskAccountNumber(account.getAccountNumber()),
+                PiiSanitizer.maskAccountNumbers(e.getMessage()));
         }
     }
 

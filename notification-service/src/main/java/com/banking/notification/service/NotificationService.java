@@ -1,5 +1,6 @@
 package com.banking.notification.service;
 
+import com.banking.common.logging.PiiSanitizer;
 import com.banking.notification.dto.NotificationRequest;
 import com.banking.notification.dto.NotificationResponse;
 import com.banking.notification.exception.ForbiddenException;
@@ -39,7 +40,8 @@ public class NotificationService {
                 .build();
 
         notification = notificationRepository.save(notification);
-        log.info("Notification created for user {}: {} - {}", request.getUserId(), type, message);
+        log.info("Notification created for user {}: {} - {}", request.getUserId(), type,
+                PiiSanitizer.maskAccountNumbers(message));
 
         // Mock: in production this would dispatch email/SMS
         dispatchMock(notification);
@@ -111,7 +113,8 @@ public class NotificationService {
     private void dispatchMock(Notification notification) {
         // Mock dispatch — replace with real email/SMS provider (e.g. SendGrid, Twilio) in production
         log.info("[MOCK NOTIFICATION] Type={} User={} Message={}",
-                notification.getType(), notification.getUserId(), notification.getMessage());
+                notification.getType(), notification.getUserId(),
+                PiiSanitizer.maskAccountNumbers(notification.getMessage()));
     }
 
     private NotificationResponse mapToResponse(Notification n) {
