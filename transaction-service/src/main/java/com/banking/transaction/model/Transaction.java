@@ -20,7 +20,7 @@ public class Transaction {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "transaction_reference", nullable = false, unique = true, length = 30)
+    @Column(name = "transaction_reference", nullable = false, unique = true, length = 40)
     private String transactionReference;
 
     @Column(name = "user_id", nullable = false)

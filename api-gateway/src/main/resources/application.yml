@@ -9,8 +9,6 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
   cloud:
-    compatibility-verifier:
-      enabled: false
     gateway:
       default-filters:
         - name: RequestRateLimiter
