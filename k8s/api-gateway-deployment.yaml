@@ -55,6 +55,8 @@ spec:
             timeoutSeconds: 5
             failureThreshold: 3
           env:
+            - name: MANAGEMENT_TRACING_SAMPLING_PROBABILITY
+              value: "0.1"
             - name: SPRING_DATASOURCE_URL
               value: "jdbc:mysql://mysql:3306/banking?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
             - name: SPRING_DATASOURCE_USERNAME
