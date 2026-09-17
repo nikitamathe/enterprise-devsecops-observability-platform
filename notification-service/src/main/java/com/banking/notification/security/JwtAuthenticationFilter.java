@@ -1,4 +1,4 @@
-package com.banking.account.security;
+package com.banking.notification.security;
 
 import com.banking.common.security.JwtService;
 import jakarta.servlet.FilterChain;
@@ -28,6 +28,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
+
         final String authHeader = request.getHeader("Authorization");
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
@@ -38,11 +39,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             String jwt = authHeader.substring(7);
             String username = jwtService.extractUsername(jwt);
+            Long jwtUserId = jwtService.extractUserId(jwt);
 
             if (username == null || jwtService.isTokenExpired(jwt)) {
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.setContentType("application/json");
                 response.getWriter().write("{\"error\":\"Invalid or expired token\"}");
+                return;
+            }
+
+            // Defense-in-depth: never trust a spoofed X-User-Id header that does not
+            // match the authenticated principal (the gateway sets it from the JWT).
+            String headerUserId = request.getHeader("X-User-Id");
+            if (headerUserId != null && !headerUserId.isBlank()
+                    && (jwtUserId == null || !jwtUserId.toString().equals(headerUserId))) {
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                response.setContentType("application/json");
+                response.getWriter().write("{\"error\":\"X-User-Id does not match authenticated user\"}");
                 return;
             }
 
@@ -54,10 +67,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 );
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             }
-
-            // Store token in thread-local so RestTemplate interceptor can forward it
-            // to downstream services (e.g. notification-service)
-            JwtContext.setToken(jwt);
         } catch (Exception e) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json");
@@ -65,11 +74,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        try {
-            filterChain.doFilter(request, response);
-        } finally {
-            // Always clean up thread-local to prevent leaks in thread-pool environments
-            JwtContext.clear();
-        }
+        filterChain.doFilter(request, response);
     }
 }

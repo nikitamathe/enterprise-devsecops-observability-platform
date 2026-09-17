@@ -223,7 +223,7 @@ service-name/
 frontend/
 ├── Dockerfile              # Multi-stage: node:20-alpine (build) → nginx:1.27-alpine (serve)
 ├── nginx.conf              # Proxies /api/* to api-gateway:8085, serves React SPA
-├── vite.config.js          # Dev server on :5173, proxies /api to localhost:8080
+├── vite.config.js          # Dev server on :5173, proxies /api to localhost:8085
 ├── tailwind.config.js      # Custom "brand" color palette
 ├── src/
 │   ├── main.jsx            # React entry: QueryClient, BrowserRouter, ErrorBoundary, Toaster
@@ -277,7 +277,7 @@ Browser → nginx:80 (frontend container)
 1. Frontend creates an Axios instance with `baseURL: '/api'`
 2. **Request interceptor** reads `accessToken` from `localStorage` and attaches `Authorization: Bearer <token>`
 3. In Docker/K8s: nginx proxies `/api/*` to `api-gateway:8085`
-4. In local dev: Vite proxy forwards `/api` to `localhost:8080`
+4. In local dev: Vite proxy forwards `/api` to `localhost:8085`
 5. **Response interceptor**: on 401, clears localStorage and hard-redirects to `/login`
 6. React Query manages caching, retry (1 attempt), and stale-time (30s)
 

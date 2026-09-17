@@ -5,7 +5,7 @@ A full-stack banking application built with React and Java 21 Spring Boot micros
 ## Architecture
 
 ```
-Frontend (React + Vite)  →  API Gateway (Spring Cloud Gateway :8080)
+Frontend (React + Vite)  →  API Gateway (Spring Cloud Gateway :8085)
                                     ↓
         ┌───────────────────────────┼───────────────────────┐
         ▼               ▼           ▼                       ▼
@@ -20,7 +20,7 @@ Auth Service      Account Service  Transaction Service  Notification Service
 | Service              | Port |
 |----------------------|------|
 | Frontend             | 5173 |
-| API Gateway          | 8080 |
+| API Gateway          | 8085 |
 | Auth Service         | 8081 |
 | Account Service      | 8082 |
 | Transaction Service  | 8083 |
