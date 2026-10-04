@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 120" width="100%">
+  <defs>
+    <linearGradient id="passed-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#064e3b"/><stop offset="100%" stop-color="#022c22"/>
+    </linearGradient>
+    <linearGradient id="gate-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e1b4b"/><stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+  </defs>
+
+  <style>
+    .node-title { font-family: monospace; font-size: 11px; font-weight: 700; fill: #e2e8f0; }
+    .node-sub { font-family: sans-serif; font-size: 9px; fill: #94a3b8; }
+    .status-badge { font-family: monospace; font-size: 9px; font-weight: 800; }
+  </style>
+
+  <rect width="920" height="120" rx="12" fill="#090d16" stroke="#1e293b"/>
+
+  <!-- Stage 1: Git Checkout -->
+  <g transform="translate(15, 15)">
+    <rect width="105" height="90" rx="8" fill="url(#passed-grad)" stroke="#10b981" stroke-width="1.4"/>
+    <text x="12" y="24" fill="#34d399" font-size="10" font-family="monospace">01</text>
+    <text x="12" y="44" class="node-title">Checkout</text>
+    <text x="12" y="58" class="node-sub">Source Control</text>
+    <rect x="12" y="66" width="81" height="15" rx="3" fill="#10b981"/>
+    <text x="32" y="77" fill="#ffffff" class="status-badge">PASSED</text>
+  </g>
+
+  <!-- Connector Line -->
+  <line x1="120" y1="60" x2="140" y2="60" stroke="#334155" stroke-width="2"/>
+
+  <!-- Stage 2: SAST & Secrets -->
+  <g transform="translate(140, 15)">
+    <rect width="105" height="90" rx="8" fill="url(#passed-grad)" stroke="#10b981" stroke-width="1.4"/>
+    <text x="12" y="24" fill="#34d399" font-size="10" font-family="monospace">02</text>
+    <text x="12" y="44" class="node-title">Code Audit</text>
+    <text x="12" y="58" class="node-sub">Gitleaks + SAST</text>
+    <rect x="12" y="66" width="81" height="15" rx="3" fill="#10b981"/>
+    <text x="32" y="77" fill="#ffffff" class="status-badge">PASSED</text>
+  </g>
+
+  <line x1="245" y1="60" x2="265" y2="60" stroke="#334155" stroke-width="2"/>
+
+  <!-- Stage 3: Build & Unit Test -->
+  <g transform="translate(265, 15)">
+    <rect width="105" height="90" rx="8" fill="url(#passed-grad)" stroke="#10b981" stroke-width="1.4"/>
+    <text x="12" y="24" fill="#34d399" font-size="10" font-family="monospace">03</text>
+    <text x="12" y="44" class="node-title">Maven Build</text>
+    <text x="12" y="58" class="node-sub">JUnit 5 / Mockito</text>
+    <rect x="12" y="66" width="81" height="15" rx="3" fill="#10b981"/>
+    <text x="32" y="77" fill="#ffffff" class="status-badge">PASSED</text>
+  </g>
+
+  <line x1="370" y1="60" x2="390" y2="60" stroke="#334155" stroke-width="2"/>
+
+  <!-- Stage 4: Trivy Container Scan -->
+  <g transform="translate(390, 15)">
+    <rect width="105" height="90" rx="8" fill="url(#passed-grad)" stroke="#10b981" stroke-width="1.4"/>
+    <text x="12" y="24" fill="#34d399" font-size="10" font-family="monospace">04</text>
+    <text x="12" y="44" class="node-title">Trivy Scan</text>
+    <text x="12" y="58" class="node-sub">CVE Image Audit</text>
+    <rect x="12" y="66" width="81" height="15" rx="3" fill="#10b981"/>
+    <text x="32" y="77" fill="#ffffff" class="status-badge">PASSED</text>
+  </g>
+
+  <line x1="495" y1="60" x2="515" y2="60" stroke="#334155" stroke-width="2"/>
+
+  <!-- Stage 5: Quality & Security Gate -->
+  <g transform="translate(515, 15)">
+    <rect width="105" height="90" rx="8" fill="url(#gate-grad)" stroke="#6366f1" stroke-width="2"/>
+    <text x="12" y="24" fill="#818cf8" font-size="10" font-family="monospace">05</text>
+    <text x="12" y="44" class="node-title">Quality Gate</text>
+    <text x="12" y="58" class="node-sub">SonarQube + Policy</text>
+    <rect x="12" y="66" width="81" height="15" rx="3" fill="#4338ca"/>
+    <text x="38" y="77" fill="#ffffff" class="status-badge">PASS</text>
+  </g>
+
+  <line x1="620" y1="60" x2="640" y2="60" stroke="#334155" stroke-width="2"/>
+
+  <!-- Stage 6: Helm Package -->
+  <g transform="translate(640, 15)">
+    <rect width="105" height="90" rx="8" fill="url(#passed-grad)" stroke="#10b981" stroke-width="1.4"/>
+    <text x="12" y="24" fill="#34d399" font-size="10" font-family="monospace">06</text>
+    <text x="12" y="44" class="node-title">Helm Chart</text>
+    <text x="12" y="58" class="node-sub">Release Packager</text>
+    <rect x="12" y="66" width="81" height="15" rx="3" fill="#10b981"/>
+    <text x="32" y="77" fill="#ffffff" class="status-badge">PASSED</text>
+  </g>
+
+  <line x1="745" y1="60" x2="765" y2="60" stroke="#334155" stroke-width="2"/>
+
+  <!-- Stage 7: Deploy EKS -->
+  <g transform="translate(765, 15)">
+    <rect width="135" height="90" rx="8" fill="url(#passed-grad)" stroke="#10b981" stroke-width="1.6"/>
+    <text x="12" y="24" fill="#34d399" font-size="10" font-family="monospace">07</text>
+    <text x="12" y="44" class="node-title">Deploy AWS EKS</text>
+    <text x="12" y="58" class="node-sub">Observability Live</text>
+    <rect x="12" y="66" width="110" height="15" rx="3" fill="#059669"/>
+    <text x="36" y="77" fill="#ffffff" class="status-badge">DEPLOYED</text>
+  </g>
+</svg>
