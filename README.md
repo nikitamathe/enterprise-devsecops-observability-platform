@@ -46,6 +46,13 @@ The platform integrates an end-to-end automated delivery lifecycle: **Jenkins CI
 ---
 ```
 ## 📐 End-to-End System Architecture
+
+<div align="center">
+  <img src="./assets/network-architecture.svg" alt="Live Cloud & Kubernetes Network Topology" width="100%" />
+</div>
+
+<br/>
+
 [ External User / React 18 SPA ]
 │
 ▼ HTTPS / TLS 1.3
