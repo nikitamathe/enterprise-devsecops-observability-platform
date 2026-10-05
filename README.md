@@ -44,13 +44,15 @@ The platform integrates an end-to-end automated delivery lifecycle: **Jenkins CI
 * **Zero-Trust Network Isolation:** Flat pod networks expose backend persistence stores to arbitrary lateral traversal. Scoped Kubernetes **NetworkPolicies** and AWS Security Groups restrict MySQL (`:3306`) access exclusively to authorized backend transaction services.
 
 ---
-```
 ## 📐 End-to-End System Architecture
 
 <div align="center">
   <img src="./assets/network-architecture.svg" alt="Live Cloud & Kubernetes Network Topology" width="100%" />
 </div>
 
+<br/>
+```
+## 📐 End-to-End System Architecture
 <br/>
 
 [ External User / React 18 SPA ]
