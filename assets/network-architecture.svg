@@ -1,0 +1,254 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" width="100%" height="100%">
+  <defs>
+    <!-- Background Canvas -->
+    <linearGradient id="bg-canvas" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#060913"/>
+      <stop offset="50%" stop-color="#0a0f1d"/>
+      <stop offset="100%" stop-color="#030712"/>
+    </linearGradient>
+
+    <!-- Zone Cards -->
+    <linearGradient id="wan-card" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e1b4b" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#0f172a" stop-opacity="0.8"/>
+    </linearGradient>
+    <linearGradient id="ingress-card" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#0b1329" stop-opacity="0.85"/>
+    </linearGradient>
+    <linearGradient id="app-card" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#142850" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#0f172a" stop-opacity="0.85"/>
+    </linearGradient>
+    <linearGradient id="db-card" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#064e3b" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#022c22" stop-opacity="0.7"/>
+    </linearGradient>
+    <linearGradient id="obs-card" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b0764" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#1e1035" stop-opacity="0.7"/>
+    </linearGradient>
+
+    <!-- Glow Effect -->
+    <filter id="neon-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <style>
+    .zone-title { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace; font-size: 13px; font-weight: 800; letter-spacing: 1.5px; }
+    .subnet-badge { font-family: monospace; font-size: 10px; fill: #64748b; font-weight: 600; }
+    .box-title { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 12px; font-weight: 700; fill: #f8fafc; }
+    .box-desc { font-family: monospace; font-size: 9.5px; fill: #94a3b8; }
+    .port-pill { font-family: monospace; font-size: 9px; font-weight: 700; fill: #38bdf8; }
+    
+    @keyframes pulseBeam {
+      0% { stroke-dashoffset: 40; }
+      100% { stroke-dashoffset: 0; }
+    }
+    .flow-line { stroke-dasharray: 6, 6; animation: pulseBeam 1.5s linear infinite; }
+    .threat-line { stroke-dasharray: 4, 4; animation: pulseBeam 0.8s linear infinite; stroke: #ef4444; }
+    .obs-line { stroke-dasharray: 4, 4; animation: pulseBeam 2s linear infinite; stroke: #c084fc; }
+  </style>
+
+  <!-- Deep Dark Tech Canvas -->
+  <rect width="1200" height="700" rx="16" fill="url(#bg-canvas)" stroke="#1e293b" stroke-width="1.5"/>
+
+  <!-- Header Banner -->
+  <text x="40" y="42" fill="#f8fafc" font-size="18" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="800" letter-spacing="0.5px">ENTERPRISE DEVSECOPS &amp; KUBERNETES TOPOLOGY</text>
+  <text x="40" y="60" fill="#64748b" font-size="11" font-family="monospace">AWS EKS CLUSTER · ZERO-TRUST NETWORKPOLICIES · PROMETHEUS + LOKI + TEMPO OBSERVABILITY</text>
+
+  <!-- ZONE 1: WAN / EXTERNAL -->
+  <g transform="translate(30, 80)">
+    <rect width="200" height="580" rx="12" fill="url(#wan-card)" stroke="#334155" stroke-width="1.2"/>
+    <text x="20" y="32" fill="#94a3b8" class="zone-title">WAN / EXTERNAL</text>
+    <text x="20" y="48" class="subnet-badge">Internet Client Layer</text>
+
+    <!-- Legitimate Customer -->
+    <g transform="translate(15, 80)">
+      <rect width="170" height="95" rx="8" fill="#0f172a" stroke="#3b82f6" stroke-width="1.2"/>
+      <circle cx="30" cy="28" r="8" fill="#1e3a8a" stroke="#60a5fa"/>
+      <text x="48" y="32" class="box-title">Bank Customer</text>
+      <text x="20" y="55" class="box-desc">React 18 + Vite SPA</text>
+      <text x="20" y="70" class="box-desc">Port: 5173 / Browser</text>
+      <text x="20" y="85" fill="#34d399" font-size="9" font-family="monospace">HTTPS / TLS 1.3</text>
+    </g>
+
+    <!-- Adversary Simulation -->
+    <g transform="translate(15, 350)">
+      <rect width="170" height="95" rx="8" fill="#1a0b12" stroke="#ef4444" stroke-width="1.2"/>
+      <circle cx="30" cy="28" r="8" fill="#7f1d1d" stroke="#f87171"/>
+      <text x="48" y="32" fill="#fca5a5" class="box-title">Attacker Node</text>
+      <text x="20" y="55" class="box-desc">Penetration Fuzzing</text>
+      <text x="20" y="70" class="box-desc">OWASP Top 10 Attack</text>
+      <text x="20" y="85" fill="#f87171" font-size="9" font-family="monospace">SQLi / Stolen JWT</text>
+    </g>
+  </g>
+
+  <!-- ZONE 2: INGRESS & PERIMETER GATEWAY -->
+  <g transform="translate(250, 80)">
+    <rect width="210" height="580" rx="12" fill="url(#ingress-card)" stroke="#2563eb" stroke-width="1.4"/>
+    <text x="20" y="32" fill="#60a5fa" class="zone-title">INGRESS &amp; ROUTER</text>
+    <text x="20" y="48" class="subnet-badge">Public EKS Subnet</text>
+
+    <!-- Ingress Controller -->
+    <g transform="translate(15, 80)">
+      <rect width="180" height="95" rx="8" fill="#0b1329" stroke="#38bdf8" stroke-width="1.2"/>
+      <text x="16" y="28" class="box-title">Ingress Controller</text>
+      <text x="16" y="46" class="box-desc">CloudFront + ALB / NGINX</text>
+      <text x="16" y="62" class="box-desc">TLS Certificate Termination</text>
+      <text x="16" y="80" class="port-pill">PORT :443 / HTTPS</text>
+    </g>
+
+    <!-- Spring Cloud Gateway -->
+    <g transform="translate(15, 230)">
+      <rect width="180" height="165" rx="8" fill="#0f172a" stroke="#6366f1" stroke-width="1.5" filter="url(#neon-glow)"/>
+      <text x="16" y="26" fill="#818cf8" class="box-title">Spring Cloud Gateway</text>
+      <text x="16" y="44" class="box-desc">Container Port: 8080</text>
+      <text x="16" y="64" class="box-desc">• JwtAuthenticationFilter</text>
+      <text x="16" y="80" class="box-desc">• CorrelationIdWebFilter</text>
+      <text x="16" y="96" class="box-desc">• Redis Rate Limiter</text>
+      <text x="16" y="112" class="box-desc">• Path-Based Micro-Routing</text>
+      <text x="16" y="128" class="box-desc">• CORS Policy Enforcement</text>
+      <rect x="16" y="140" width="148" height="15" rx="3" fill="#312e81"/>
+      <text x="24" y="151" fill="#c7d2fe" font-size="8.5" font-family="monospace" font-weight="700">TOKEN INSPECTION GATE</text>
+    </g>
+  </g>
+
+  <!-- ZONE 3: PRIVATE EKS CLUSTER (MICROSERVICES) -->
+  <g transform="translate(480, 80)">
+    <rect width="250" height="580" rx="12" fill="url(#app-card)" stroke="#0284c7" stroke-width="1.2"/>
+    <text x="20" y="32" fill="#38bdf8" class="zone-title">CORE BANKING PODS</text>
+    <text x="20" y="48" class="subnet-badge">EKS Pod CIDR (10.0.2.0/24)</text>
+
+    <!-- Microservices Stack -->
+    <g transform="translate(15, 75)">
+      <rect width="220" height="72" rx="7" fill="#0b172e" stroke="#38bdf8" stroke-width="1"/>
+      <text x="14" y="24" class="box-title">Auth-Service</text>
+      <text x="14" y="40" class="box-desc">Port: 8081 | RS256 JWT Issuer</text>
+      <text x="14" y="56" class="box-desc">BCrypt Hashing / User Details</text>
+    </g>
+
+    <g transform="translate(15, 160)">
+      <rect width="220" height="72" rx="7" fill="#0b172e" stroke="#38bdf8" stroke-width="1"/>
+      <text x="14" y="24" class="box-title">Account-Service</text>
+      <text x="14" y="40" class="box-desc">Port: 8082 | Customer Ledger</text>
+      <text x="14" y="56" class="box-desc">Balance Manager / DTO Validator</text>
+    </g>
+
+    <g transform="translate(15, 245)">
+      <rect width="220" height="72" rx="7" fill="#0b172e" stroke="#38bdf8" stroke-width="1"/>
+      <text x="14" y="24" class="box-title">Transaction-Service</text>
+      <text x="14" y="40" class="box-desc">Port: 8083 | Atomic Transfers</text>
+      <text x="14" y="56" class="box-desc">AccountCache / Redis Locking</text>
+    </g>
+
+    <g transform="translate(15, 330)">
+      <rect width="220" height="72" rx="7" fill="#0b172e" stroke="#38bdf8" stroke-width="1"/>
+      <text x="14" y="24" class="box-title">Notification-Service</text>
+      <text x="14" y="40" class="box-desc">Port: 8084 | Security Auditing</text>
+      <text x="14" y="56" class="box-desc">Async Event Consumer</text>
+    </g>
+
+    <!-- Sidecar / Common Library Layer -->
+    <g transform="translate(15, 420)">
+      <rect width="220" height="85" rx="7" fill="#1e1b4b" stroke="#818cf8" stroke-dasharray="3, 3"/>
+      <text x="14" y="24" fill="#c7d2fe" class="box-title">Common-Lib Security Invariant</text>
+      <text x="14" y="40" class="box-desc">• PiiMaskingJsonProvider (Logback)</text>
+      <text x="14" y="56" class="box-desc">• CorrelationIdPropagation</text>
+      <text x="14" y="72" fill="#a5b4fc" font-size="9" font-family="monospace">Zero Clear-Text Sensitive Data</text>
+    </g>
+  </g>
+
+  <!-- ZONE 4: ISOLATED DATA TIER -->
+  <g transform="translate(750, 80)">
+    <rect width="200" height="580" rx="12" fill="url(#db-card)" stroke="#059669" stroke-width="1.2"/>
+    <text x="20" y="32" fill="#34d399" class="zone-title">DATA ENCLAVE</text>
+    <text x="20" y="48" class="subnet-badge">Private Subnet (10.0.3.0/24)</text>
+
+    <!-- MySQL StatefulSet -->
+    <g transform="translate(15, 140)">
+      <rect width="170" height="120" rx="8" fill="#022c22" stroke="#10b981" stroke-width="1.4"/>
+      <text x="16" y="28" fill="#6ee7b7" class="box-title">MySQL 8.0 Database</text>
+      <text x="16" y="48" class="box-desc">StatefulSet (:3306)</text>
+      <text x="16" y="66" class="box-desc">• PVC Persistent Volume</text>
+      <text x="16" y="82" class="box-desc">• mysqld-exporter Sidecar</text>
+      <text x="16" y="100" fill="#34d399" font-size="9" font-family="monospace">RESTRICTED TO DB CLIENTS</text>
+    </g>
+
+    <!-- Redis Cache -->
+    <g transform="translate(15, 300)">
+      <rect width="170" height="105" rx="8" fill="#022c22" stroke="#10b981" stroke-width="1.4"/>
+      <text x="16" y="28" fill="#6ee7b7" class="box-title">Redis Cache Node</text>
+      <text x="16" y="48" class="box-desc">Port: 6379</text>
+      <text x="16" y="66" class="box-desc">• Gateway Rate Limit Keys</text>
+      <text x="16" y="82" class="box-desc">• Account Cache Store</text>
+      <text x="16" y="96" fill="#34d399" font-size="8.5" font-family="monospace">K8s Deployment / ClusterIP</text>
+    </g>
+  </g>
+
+  <!-- ZONE 5: OBSERVABILITY & TELEMETRY HUB -->
+  <g transform="translate(970, 80)">
+    <rect width="200" height="580" rx="12" fill="url(#obs-card)" stroke="#9333ea" stroke-width="1.2"/>
+    <text x="20" y="32" fill="#c084fc" class="zone-title">OBSERVABILITY HUB</text>
+    <text x="20" y="48" class="subnet-badge">Monitoring Enclave</text>
+
+    <!-- Prometheus & Grafana -->
+    <g transform="translate(15, 75)">
+      <rect width="170" height="90" rx="8" fill="#180b26" stroke="#c084fc" stroke-width="1"/>
+      <text x="14" y="24" class="box-title">Prometheus &amp; Grafana</text>
+      <text x="14" y="42" class="box-desc">Metrics Pull Engine (:9090)</text>
+      <text x="14" y="58" class="box-desc">Grafana Dashboards (:3000)</text>
+      <text x="14" y="76" fill="#e9d5ff" font-size="9" font-family="monospace">Node/Pod/JVM Scraping</text>
+    </g>
+
+    <!-- Promtail & Loki Central Logs -->
+    <g transform="translate(15, 185)">
+      <rect width="170" height="90" rx="8" fill="#180b26" stroke="#c084fc" stroke-width="1"/>
+      <text x="14" y="24" class="box-title">Promtail &amp; Loki</text>
+      <text x="14" y="42" class="box-desc">DaemonSet Log Collector</text>
+      <text x="14" y="58" class="box-desc">Loki Log Store (:3100)</text>
+      <text x="14" y="76" fill="#e9d5ff" font-size="9" font-family="monospace">Structured JSON Ingestion</text>
+    </g>
+
+    <!-- Tempo Distributed Tracing -->
+    <g transform="translate(15, 295)">
+      <rect width="170" height="90" rx="8" fill="#180b26" stroke="#c084fc" stroke-width="1"/>
+      <text x="14" y="24" class="box-title">Grafana Tempo</text>
+      <text x="14" y="42" class="box-desc">Distributed Tracing (:4317)</text>
+      <text x="14" y="58" class="box-desc">OTel Traces &amp; Spans</text>
+      <text x="14" y="76" fill="#e9d5ff" font-size="9" font-family="monospace">Multi-Hop Trace Graph</text>
+    </g>
+
+    <!-- Alertmanager -->
+    <g transform="translate(15, 405)">
+      <rect width="170" height="80" rx="8" fill="#180b26" stroke="#ef4444" stroke-width="1"/>
+      <text x="14" y="24" fill="#fca5a5" class="box-title">Alertmanager</text>
+      <text x="14" y="42" class="box-desc">Port: 9093</text>
+      <text x="14" y="58" class="box-desc">High Latency &amp; Error Pager</text>
+    </g>
+  </g>
+
+  <!-- CONNECTING FLOW BEAMS -->
+  <!-- Client to Ingress -->
+  <line x1="200" y1="205" x2="265" y2="205" stroke="#38bdf8" stroke-width="2" class="flow-line"/>
+
+  <!-- Threat Line (Dropped at Gateway) -->
+  <line x1="200" y1="475" x2="265" y2="385" stroke="#ef4444" stroke-width="2" class="threat-line"/>
+  <circle cx="265" cy="385" r="4" fill="#ef4444"/>
+
+  <!-- Gateway to Microservice Pods -->
+  <path d="M 445 365 L 495 190" stroke="#38bdf8" stroke-width="1.5" class="flow-line" fill="none"/>
+  <path d="M 445 365 L 495 275" stroke="#38bdf8" stroke-width="1.5" class="flow-line" fill="none"/>
+  <path d="M 445 365 L 495 360" stroke="#38bdf8" stroke-width="1.5" class="flow-line" fill="none"/>
+
+  <!-- Microservices to MySQL (NetworkPolicy Allowed) -->
+  <line x1="715" y1="280" x2="765" y2="280" stroke="#34d399" stroke-width="2" class="flow-line"/>
+
+  <!-- Microservices to Observability Hub -->
+  <path d="M 715 490 L 985 410" stroke="#c084fc" stroke-width="1.5" class="obs-line" fill="none"/>
+</svg>
