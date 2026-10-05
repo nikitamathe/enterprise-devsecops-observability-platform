@@ -84,27 +84,27 @@ The platform integrates an end-to-end automated delivery lifecycle: **Jenkins CI
     ├── Traces  : OpenTelemetry Agent ───> Grafana Tempo (:4317)
     └── Alerts  : Alertmanager (:9093) ──> Webhook Notification Dispatch
 ```
-## 🛡️ Microservices & Port Matrix
+## 🛡️️ Microservices & Port Matrix
 
-Service,Port,Technology,Primary Functionality,Security Controls
-API Gateway,8085,Spring Cloud Gateway,"Edge ingress routing, rate limiting","JWT validation, Redis rate-limiter, CORS enforcement"
-Auth Service,8081,Spring Boot 3.x,Identity issuance & token lifecycle,"BCrypt hashing, RS256 signed JWTs, refresh rotation"
-Account Service,8082,Spring Boot 3.x,Customer profile & ledger querying,"RBAC method security, PII log sanitization"
-Transaction Service,8083,Spring Boot 3.x,Fund transfers & atomic ledgering,"Idempotency locks, Atomic transactions, NetworkPolicy gate"
-Notification Service,8084,Spring Boot 3.x,Asynchronous security & audit alerts,"Decoupled event consumer, internal-only ingress"
-Customer Service,8086,Spring Boot 3.x,User profile and onboarding data,"Input validation schemas, encrypted storage"
-MySQL Cluster,3306,MySQL 8.0 StatefulSet,Core banking data persistence,"Amazon EBS encrypted volumes, non-root user"
-Redis Cache,6379,Redis 7.x,"Rate-limiting buckets, token denylists","In-memory token expiration, non-root container"
+| Service | Port | Technology | Primary Functionality | Security Controls |
+| :--- | :---: | :--- | :--- | :--- |
+| **API Gateway** | `8085` | Spring Cloud Gateway | Edge ingress routing, rate limiting | JWT validation, Redis rate-limiter, CORS enforcement |
+| **Auth Service** | `8081` | Spring Boot 3.x | Identity issuance & token lifecycle | BCrypt hashing, RS256 signed JWTs, refresh rotation |
+| **Account Service** | `8082` | Spring Boot 3.x | Customer profile & ledger querying | RBAC method security, PII log sanitization |
+| **Transaction Service** | `8083` | Spring Boot 3.x | Fund transfers & atomic ledgering | Idempotency locks, Atomic transactions, NetworkPolicy gate |
+| **Notification Service** | `8084` | Spring Boot 3.x | Asynchronous security & audit alerts | Decoupled event consumer, internal-only ingress |
+| **Customer Service** | `8086` | Spring Boot 3.x | User profile and onboarding data | Input validation schemas, encrypted storage |
+| **MySQL Cluster** | `3306` | MySQL 8.0 StatefulSet | Core banking data persistence | Amazon EBS encrypted volumes, non-root user |
+| **Redis Cache** | `6379` | Redis 7.x | Rate-limiting buckets, token denylists | In-memory token expiration, non-root container |
+
+---
 
 ## 📊 Telemetry & Observability Stack
 
-Metrics (Prometheus & Grafana): Continuously scrapes JVM metrics, garbage collection timings, pod resource usage, and standard RED metrics (Rate, Errors, Duration).
-
-Distributed Tracing (OpenTelemetry & Tempo): Generates distributed trace graphs across inbound gateway requests, inter-service RestTemplate calls, and JDBC database queries.
-
-Centralized Logging (Promtail, Fluent Bit & Loki): DaemonSet collectors ingest container logs, attach Kubernetes metadata labels, and stream them to centralized dashboards for real-time investigation.
-
-Health & Probes: Implements Spring Boot Actuator liveness and readiness endpoints (/actuator/health) across all pods for automated Kubernetes self-healing.
+* **Metrics (Prometheus & Grafana):** Continuously scrapes JVM metrics, garbage collection timings, pod resource usage, and standard RED metrics (Rate, Errors, Duration).
+* **Distributed Tracing (OpenTelemetry & Tempo):** Generates distributed trace graphs across inbound gateway requests, inter-service RestTemplate calls, and JDBC database queries.
+* **Centralized Logging (Promtail, Fluent Bit & Loki):** DaemonSet collectors ingest container logs, attach Kubernetes metadata labels, and stream them to centralized dashboards for real-time investigation.
+* **Health & Probes:** Implements Spring Boot Actuator liveness and readiness endpoints (`/actuator/health`) across all pods for automated Kubernetes self-healing.
 
 ## 🚀 Quick Start (Local Docker Compose)
 Prerequisites
